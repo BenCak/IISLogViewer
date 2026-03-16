@@ -9,7 +9,7 @@
 
 // This file contains provisioning of Telerik products runtime usage.
 
-[assembly: Telerik.Licensing.LicenseUsedDateAttribute("2026-03-15")]
+[assembly: Telerik.Licensing.LicenseUsedDateAttribute("2026-03-16")]
 [assembly: Telerik.Licensing.EvidenceAttribute("eyJhbGciOiJSUzI1NiIsInR5cCI6IlRlbGVyaWsgTGljZW5zZSBFdmlkZW5jZSJ9.eyJjb2RlIjoiQkxBWk9SIiwidHlwZSI6InRyaWFsIiwiZXhwaXJhdGlvbiI6MTc3NjIwMTcyMywidXNlcklkIjoiMGRiZjA2M2ItZTc3Yi00NzlmLThmMGItYTUwNjczN2E1N2Y3IiwibGljZW5zZUlkIjoiOTllMmRiY2EtYTk1NS00NmQyLTg5ZjUtMGE0MDQ0ZjA5YmZiIn0.UWMf8DnSUVwv8gRM3G5eNq8GfaNRxaXf6SgoRDzqlnOoDQuWrQXY8cyk_f8t1Ozva-3-6xVWT0IWLYITwekF9aqEbF6XYjJDXtjV2aqRDbbhIkRZM67u_7-2SsGVNriDM3mRgbkhYRLEfqgfUStZQG7NzFfqD87Fy5E7QZqi6qRuO9a68r5Q0_rtkHQQ2mimoo0O64OIC7VqK7k3zw4mJq8cFIAIXnQINEuU2psczGtsej8qLWPR5WKz5dRw_7QKdf29tv1A8pUUJ5uSxlFjpksvOvRdZ0mKUhiVkf7aIrdQULPXrKYDukijyPmo7L5FST-nsLNNH3NN7pP8HO3P1w")]
 
 [assembly: Telerik.Licensing.ProductReferenceAttribute("BLAZOR", "2026-02-12", "", "Telerik UI for Blazor", "13.0.0.0")]
