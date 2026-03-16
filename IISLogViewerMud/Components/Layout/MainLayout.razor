@@ -1,0 +1,156 @@
+@inherits LayoutComponentBase
+@rendermode InteractiveServer
+
+<MudThemeProvider Theme="_currentTheme" IsDarkMode="_isDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Fixed="true">
+        <MudText Typo="Typo.h6" Class="ml-3">IIS Log Viewer — WSSVC2</MudText>
+        <MudSpacer />
+        <MudMenu Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+            <div class="pa-4" style="min-width:220px;">
+                <MudText Typo="Typo.subtitle2" Class="mb-2"><b>Theme</b></MudText>
+                <MudSelect T="string" Value="_selectedTheme" ValueChanged="OnThemeChanged"
+                           Dense="true" Margin="Margin.Dense" Variant="Variant.Outlined"
+                           Label="Color Theme">
+                    @foreach (var name in _themes.Keys)
+                    {
+                        <MudSelectItem T="string" Value="@name">@name</MudSelectItem>
+                    }
+                </MudSelect>
+            </div>
+        </MudMenu>
+    </MudAppBar>
+
+    <MudDrawer Open="true" Variant="DrawerVariant.Persistent" Elevation="2" ClipMode="DrawerClipMode.Always">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.subtitle1"><b>Log Files</b></MudText>
+        </MudDrawerHeader>
+        <NavMenu />
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4 pt-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private string _selectedTheme = "Light";
+    private bool _isDarkMode = false;
+    private MudTheme _currentTheme = new();
+
+    private static readonly Dictionary<string, (bool IsDark, MudTheme Theme)> _themes = new()
+    {
+        ["Slate"] = (true, new MudTheme
+        {
+            PaletteDark = new PaletteDark
+            {
+                Primary = "#3E91FF",
+                Secondary = "#A29BFE",
+                Background = "#0F172A",
+                Surface = "#1E293B",
+                DrawerBackground = "#1E293B",
+                AppbarBackground = "#1E293B",
+                ActionDefault = "#94A3B8",
+                TextPrimary = "#F8FAFC",
+                TextSecondary = "#94A3B8",
+                TableStriped = "#1E293B",
+                LinesDefault = "#334155",
+                Divider = "#334155"
+            }
+        }),
+        ["Ocean"] = (true, new MudTheme
+        {
+            PaletteDark = new PaletteDark
+            {
+                Primary = "#00BCD4",
+                Secondary = "#26C6DA",
+                Background = "#0A1929",
+                Surface = "#132F4C",
+                DrawerBackground = "#132F4C",
+                AppbarBackground = "#0A1929",
+                ActionDefault = "#B2BAC2",
+                TextPrimary = "#E7EBF0",
+                TextSecondary = "#B2BAC2",
+                TableStriped = "#132F4C",
+                LinesDefault = "#265D97",
+                Divider = "#265D97"
+            }
+        }),
+        ["Emerald"] = (true, new MudTheme
+        {
+            PaletteDark = new PaletteDark
+            {
+                Primary = "#10B981",
+                Secondary = "#34D399",
+                Background = "#022C22",
+                Surface = "#064E3B",
+                DrawerBackground = "#064E3B",
+                AppbarBackground = "#022C22",
+                ActionDefault = "#A7F3D0",
+                TextPrimary = "#ECFDF5",
+                TextSecondary = "#A7F3D0",
+                TableStriped = "#064E3B",
+                LinesDefault = "#065F46",
+                Divider = "#065F46"
+            }
+        }),
+        ["Crimson"] = (true, new MudTheme
+        {
+            PaletteDark = new PaletteDark
+            {
+                Primary = "#EF4444",
+                Secondary = "#F87171",
+                Background = "#1C1017",
+                Surface = "#2D1B24",
+                DrawerBackground = "#2D1B24",
+                AppbarBackground = "#1C1017",
+                ActionDefault = "#FCA5A5",
+                TextPrimary = "#FEF2F2",
+                TextSecondary = "#FCA5A5",
+                TableStriped = "#2D1B24",
+                LinesDefault = "#991B1B",
+                Divider = "#991B1B"
+            }
+        }),
+        ["Light"] = (false, new MudTheme
+        {
+            PaletteLight = new PaletteLight
+            {
+                Primary = "#1976D2",
+                Secondary = "#7C4DFF",
+                Background = "#F5F5F5",
+                Surface = "#FFFFFF",
+                DrawerBackground = "#FFFFFF",
+                AppbarBackground = "#1976D2",
+                AppbarText = "#FFFFFF",
+                TextPrimary = "#212121",
+                TextSecondary = "#757575",
+                TableStriped = "#FAFAFA",
+                LinesDefault = "#E0E0E0",
+                Divider = "#E0E0E0"
+            }
+        })
+    };
+
+    protected override void OnInitialized()
+    {
+        var entry = _themes[_selectedTheme];
+        _currentTheme = entry.Theme;
+        _isDarkMode = entry.IsDark;
+    }
+
+    private void OnThemeChanged(string themeName)
+    {
+        _selectedTheme = themeName;
+        var entry = _themes[themeName];
+        _currentTheme = entry.Theme;
+        _isDarkMode = entry.IsDark;
+        StateHasChanged();
+    }
+}
