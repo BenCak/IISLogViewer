@@ -149,3 +149,4 @@
 /home/ben/code/IISLogViewerT/obj/Debug/net8.0/IISLogVi.698D98E9.Up2Date
 /home/ben/code/IISLogViewerT/obj/Debug/net8.0/IISLogViewer.genruntimeconfig.cache
 /home/ben/code/IISLogViewerT/obj/Debug/net8.0/ref/IISLogViewer.dll
+/home/ben/code/IISLogViewerT/obj/Debug/net8.0/IISLogViewer.sourcelink.json

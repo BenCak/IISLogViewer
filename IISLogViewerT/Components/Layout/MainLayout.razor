@@ -51,48 +51,48 @@
         color: var(--shell-text);
     }
 
-    .app-shell.theme-slate {
-        --shell-bg: #0f172a;
-        --shell-panel: #162033;
-        --shell-panel-muted: #0b1220;
-        --shell-border: #273449;
-        --shell-text: #edf4ff;
-        --shell-subtle: #96a7c2;
-        --shell-primary: #60a5fa;
-        --shell-accent: #1e293b;
+    .app-shell.theme-bootstrap {
+        --shell-bg: #f8f9fa;
+        --shell-panel: #ffffff;
+        --shell-panel-muted: #e9ecef;
+        --shell-border: #dee2e6;
+        --shell-text: #212529;
+        --shell-subtle: #6c757d;
+        --shell-primary: #0d6efd;
+        --shell-accent: #6f42c1;
     }
 
-    .app-shell.theme-ocean {
-        --shell-bg: #071a2f;
-        --shell-panel: #0f2945;
-        --shell-panel-muted: #092038;
-        --shell-border: #234c70;
-        --shell-text: #e5f4ff;
-        --shell-subtle: #9dc2df;
-        --shell-primary: #22d3ee;
-        --shell-accent: #0b2239;
+    .app-shell.theme-material {
+        --shell-bg: #fafafa;
+        --shell-panel: #ffffff;
+        --shell-panel-muted: #eeeeee;
+        --shell-border: #e0e0e0;
+        --shell-text: #212121;
+        --shell-subtle: #757575;
+        --shell-primary: #2196f3;
+        --shell-accent: #1565c0;
     }
 
-    .app-shell.theme-emerald {
-        --shell-bg: #06261c;
-        --shell-panel: #0d3b2c;
-        --shell-panel-muted: #082e22;
-        --shell-border: #1d5b45;
-        --shell-text: #ebfff6;
-        --shell-subtle: #a1d9c1;
-        --shell-primary: #34d399;
-        --shell-accent: #0a2a1f;
+    .app-shell.theme-fluent {
+        --shell-bg: #f3f2f1;
+        --shell-panel: #ffffff;
+        --shell-panel-muted: #edebe9;
+        --shell-border: #e1dfdd;
+        --shell-text: #201f1e;
+        --shell-subtle: #605e5c;
+        --shell-primary: #0078d4;
+        --shell-accent: #106ebe;
     }
 
-    .app-shell.theme-crimson {
-        --shell-bg: #241319;
-        --shell-panel: #3a1c25;
-        --shell-panel-muted: #2b131c;
-        --shell-border: #6f3243;
-        --shell-text: #fff1f4;
-        --shell-subtle: #efb0bd;
-        --shell-primary: #fb7185;
-        --shell-accent: #2d141d;
+    .app-shell.theme-black {
+        --shell-bg: #1a1a1a;
+        --shell-panel: #262626;
+        --shell-panel-muted: #0f0f0f;
+        --shell-border: #404040;
+        --shell-text: #e8e8e8;
+        --shell-subtle: #909090;
+        --shell-primary: #00bfff;
+        --shell-accent: #2a2a2a;
     }
 
     .app-shell__header {
@@ -117,7 +117,7 @@
 
     .app-shell__subtitle,
     .app-shell__label {
-        color: var(--shell-subtle);
+        color: var(--shell-text);
         font-size: 0.85rem;
     }
 
@@ -189,11 +189,11 @@
 
     private static readonly IReadOnlyList<ThemeOption> ThemeOptions = new[]
     {
-        new ThemeOption("Light", "theme-light"),
-        new ThemeOption("Slate", "theme-slate"),
-        new ThemeOption("Ocean", "theme-ocean"),
-        new ThemeOption("Emerald", "theme-emerald"),
-        new ThemeOption("Crimson", "theme-crimson")
+        new ThemeOption("Default", "theme-default"),
+        new ThemeOption("Bootstrap", "theme-bootstrap"),
+        new ThemeOption("Material", "theme-material"),
+        new ThemeOption("Fluent", "theme-fluent"),
+        new ThemeOption("Black", "theme-black")
     };
 
     private void OnThemeChanged(string themeName)

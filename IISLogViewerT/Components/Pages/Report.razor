@@ -21,7 +21,7 @@
                          Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(LabelValueRow.Label)" Title="Page" />
-                    <GridColumn Field="@nameof(LabelValueRow.ValueLabel)" Title="Hits" />
+                    <GridColumn Field="@nameof(LabelValueRow.ValueLabel)" Title="Hits" Width="120px" />
                 </GridColumns>
             </TelerikGrid>
         }
@@ -53,7 +53,7 @@
                          Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(LabelValueRow.Label)" Title="IP Address" />
-                    <GridColumn Field="@nameof(LabelValueRow.ValueLabel)" Title="Hits" />
+                    <GridColumn Field="@nameof(LabelValueRow.ValueLabel)" Title="Hits" Width="120px" />
                 </GridColumns>
             </TelerikGrid>
         }
@@ -85,7 +85,7 @@
                          Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(LabelValueRow.Label)" Title="Page" />
-                    <GridColumn Field="@nameof(LabelValueRow.ValueLabel)" Title="Hits" />
+                    <GridColumn Field="@nameof(LabelValueRow.ValueLabel)" Title="Hits" Width="120px" />
                 </GridColumns>
             </TelerikGrid>
         }
@@ -119,9 +119,9 @@
                          Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(DocumentRow.File)" Title="File" />
-                    <GridColumn Field="@nameof(DocumentRow.TypeLabel)" Title="Type" />
-                    <GridColumn Field="@nameof(DocumentRow.DownloadsLabel)" Title="Downloads" />
-                    <GridColumn Field="@nameof(DocumentRow.AvgTimeLabel)" Title="Avg Time" />
+                    <GridColumn Field="@nameof(DocumentRow.TypeLabel)" Title="Type" Width="80px" />
+                    <GridColumn Field="@nameof(DocumentRow.DownloadsLabel)" Title="Downloads" Width="110px" />
+                    <GridColumn Field="@nameof(DocumentRow.AvgTimeLabel)" Title="Avg Time" Width="100px" />
                 </GridColumns>
             </TelerikGrid>
         }
@@ -153,7 +153,7 @@
                          Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(LabelValueRow.Label)" Title="Type" />
-                    <GridColumn Field="@nameof(LabelValueRow.ValueLabel)" Title="Hits" />
+                    <GridColumn Field="@nameof(LabelValueRow.ValueLabel)" Title="Hits" Width="120px" />
                 </GridColumns>
             </TelerikGrid>
         }
@@ -187,7 +187,7 @@
                          Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(StatusRow.StatusLabel)" Title="Status" />
-                    <GridColumn Field="@nameof(StatusRow.CountLabel)" Title="Count" />
+                    <GridColumn Field="@nameof(StatusRow.CountLabel)" Title="Count" Width="120px" />
                 </GridColumns>
             </TelerikGrid>
         }
@@ -221,7 +221,7 @@
                          Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(SlowPageRow.Page)" Title="Page" />
-                    <GridColumn Field="@nameof(SlowPageRow.AvgTimeLabel)" Title="Avg Time (ms)" />
+                    <GridColumn Field="@nameof(SlowPageRow.AvgTimeLabel)" Title="Avg Time (ms)" Width="130px" />
                 </GridColumns>
             </TelerikGrid>
         }
@@ -255,7 +255,7 @@
                          Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(HourRow.HourLabel)" Title="Hour" />
-                    <GridColumn Field="@nameof(HourRow.HitsLabel)" Title="Hits" />
+                    <GridColumn Field="@nameof(HourRow.HitsLabel)" Title="Hits" Width="120px" />
                 </GridColumns>
             </TelerikGrid>
         }
@@ -283,6 +283,8 @@
         margin: 0;
         font-size: 1rem;
         font-weight: 700;
+        color: var(--shell-text) !important;
+        opacity: 1 !important;
     }
 
     .empty-state {

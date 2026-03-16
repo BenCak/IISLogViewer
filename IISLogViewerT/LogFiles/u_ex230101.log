@@ -1,6 +1,0 @@
-#Fields: date time s-ip cs-method cs-uri-stem cs-uri-query c-ip cs(User-Agent) sc-status sc-bytes cs-bytes time-taken
-2023-01-01 12:00:00 192.168.1.1 GET /page.aspx TabID=123 192.168.1.100 Mozilla/5.0 200 1024 512 150
-2023-01-01 12:01:00 192.168.1.1 GET /page.aspx TabID=124 192.168.1.101 Mozilla/5.0 200 2048 1024 200
-2023-01-01 12:02:00 192.168.1.1 GET /document.pdf - 192.168.1.102 Mozilla/5.0 200 1048576 512 300
-2023-01-01 12:03:00 192.168.1.1 GET /error.aspx TabID=125 192.168.1.103 Mozilla/5.0 404 512 512 100
-2023-01-01 13:00:00 192.168.1.1 GET /slowpage.aspx TabID=126 192.168.1.104 Mozilla/5.0 200 1024 512 6000
