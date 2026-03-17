@@ -7,7 +7,7 @@
                     role="tab"
                     aria-selected="@(ActiveTab == tab)"
                     @onclick="@(() => ActiveTab = tab)">
-                @tab
+                @GetTabTitle(tab)
             </button>
         }
     </div>
@@ -306,6 +306,24 @@
     };
 
     private TabName ActiveTab { get; set; } = TabName.Pages;
+
+    private string GetTabTitle(TabName tab)
+    {
+        var (name, count) = tab switch
+        {
+            TabName.Pages => ("Pages", ReportData?.PageHits?.Count ?? 0),
+            TabName.IPs => ("IPs", ReportData?.TopIPs?.Count ?? 0),
+            TabName.Errors => ("Errors", ReportData?.ErrorPages?.Count ?? 0),
+            TabName.Documents => ("Documents", ReportData?.DocumentHits?.Count ?? 0),
+            TabName.Popups => ("Popups", ReportData?.PopupHits?.Count ?? 0),
+            TabName.StatusCodes => ("Status Codes", ReportData?.StatusCodes?.Count ?? 0),
+            TabName.SlowPages => ("Slow Pages", ReportData?.SlowPages?.Count ?? 0),
+            TabName.HourlyHits => ("Hourly Hits", ReportData?.HourlyHits?.Count ?? 0),
+            _ => (tab.ToString(), 0)
+        };
+
+        return $"{name} ({count:N0})";
+    }
 
     // Search strings for each distinct tab
     private string _searchPages = "";

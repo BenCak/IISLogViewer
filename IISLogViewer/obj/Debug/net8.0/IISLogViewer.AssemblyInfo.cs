@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("IISLogViewer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8d657d36f8e42caad36f9dee51102dcac18bb98c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b550415773e4757d85493eb20142cd983bf171bd")]
 [assembly: System.Reflection.AssemblyProductAttribute("IISLogViewer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IISLogViewer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
