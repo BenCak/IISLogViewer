@@ -173,24 +173,114 @@ namespace IISLogViewer.Services
             public long TotalTime { get; set; }
         }
 
+        private sealed class FileParseResult
+        {
+            public LogReport Report { get; init; } = new();
+            public Dictionary<string, AggregateTracker> DocumentTracking { get; init; } = new();
+            public Dictionary<string, AggregateTracker> SlowTracking { get; init; } = new();
+        }
+
         private async Task<LogReport> ParseFiles(IEnumerable<string> filePaths)
         {
-            var report = new LogReport();
-            
-            // Temporary trackers for averages
-            var docTracking = new Dictionary<string, AggregateTracker>();
-            var slowTracking = new Dictionary<string, AggregateTracker>();
+            var paths = filePaths.Where(File.Exists).ToArray();
+            if (paths.Length == 0)
+                return new LogReport();
 
-            foreach (var path in filePaths)
+            // Parse each file on a background thread, then merge.
+            var tasks = paths.Select(p => Task.Run(() => ParseSingleFile(p)));
+            var results = await Task.WhenAll(tasks);
+
+            var report = new LogReport();
+            var docTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
+            var slowTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var res in results)
             {
-                if (!File.Exists(path)) continue;
+                var r = res.Report;
+
+                report.TotalHits += r.TotalHits;
+
+                MergeDictionary(report.PageHits, r.PageHits);
+                MergeDictionary(report.TabHits, r.TabHits);
+                MergeDictionary(report.ModuleHits, r.ModuleHits);
+                MergeDictionary(report.PopupHits, r.PopupHits);
+                MergeDictionary(report.DocumentHits, r.DocumentHits);
+                MergeDictionary(report.TopIPs, r.TopIPs);
+                MergeDictionary(report.ErrorPages, r.ErrorPages);
+                MergeDictionary(report.StatusCodes, r.StatusCodes);
+                MergeDictionary(report.HourlyHits, r.HourlyHits);
+
+                MergeTracking(docTracking, res.DocumentTracking);
+                MergeTracking(slowTracking, res.SlowTracking);
+            }
+
+            // Post-process Sorting and Averages once, after merge
+            report.PageHits = report.PageHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.TabHits = report.TabHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.ModuleHits = report.ModuleHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.PopupHits = report.PopupHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.TopIPs = report.TopIPs.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.ErrorPages = report.ErrorPages.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.HourlyHits = report.HourlyHits.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+
+            report.DocumentHits = report.DocumentHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            foreach (var kvp in docTracking)
+            {
+                report.DocumentAvgTime[kvp.Key] = (int)(kvp.Value.TotalTime / kvp.Value.Hits);
+            }
+
+            var sortedSlowPages = slowTracking
+                .ToDictionary(kvp => kvp.Key, kvp => (int)(kvp.Value.TotalTime / kvp.Value.Hits))
+                .OrderByDescending(x => x.Value)
+                .ToDictionary(x => x.Key, x => x.Value);
+            report.SlowPages = sortedSlowPages;
+
+            return report;
+        }
+
+        private static void MergeDictionary<TKey>(Dictionary<TKey, int> target, Dictionary<TKey, int> source) where TKey : notnull
+        {
+            foreach (var kvp in source)
+            {
+                if (target.TryGetValue(kvp.Key, out var existing))
+                    target[kvp.Key] = existing + kvp.Value;
+                else
+                    target[kvp.Key] = kvp.Value;
+            }
+        }
+
+        private static void MergeTracking(Dictionary<string, AggregateTracker> target, Dictionary<string, AggregateTracker> source)
+        {
+            foreach (var (key, tracker) in source)
+            {
+                if (!target.TryGetValue(key, out var existing))
+                {
+                    target[key] = new AggregateTracker { Hits = tracker.Hits, TotalTime = tracker.TotalTime };
+                }
+                else
+                {
+                    existing.Hits += tracker.Hits;
+                    existing.TotalTime += tracker.TotalTime;
+                }
+            }
+        }
+
+        private FileParseResult ParseSingleFile(string path)
+        {
+            var report = new LogReport();
+            var docTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
+            var slowTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                if (!File.Exists(path))
+                    return new FileParseResult { Report = report, DocumentTracking = docTracking, SlowTracking = slowTracking };
 
                 string[] fields = Array.Empty<string>();
 
-                // We await the file reading asynchronously to free the thread
                 using var reader = new StreamReader(path);
                 string? line;
-                while ((line = await reader.ReadLineAsync()) != null)
+                while ((line = reader.ReadLine()) != null)
                 {
                     if (line.StartsWith("#Fields:"))
                     {
@@ -271,7 +361,7 @@ namespace IISLogViewer.Services
 
                         // Determine Entry Type
                         bool isDocument = DnnMappings.DocumentExtensions.Contains(fileExtension);
-                        
+
                         // Parse query string for DNN specific things
                         string? tabName = null;
                         string? moduleName = null;
@@ -359,32 +449,23 @@ namespace IISLogViewer.Services
                             }
                         }
                     }
-                    catch { continue; }
+                    catch
+                    {
+                        continue;
+                    }
                 }
             }
-            
-            // Post-process Sorting and Averages directly inline without Linq on millions of objects
-            report.PageHits = report.PageHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
-            report.TabHits = report.TabHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
-            report.ModuleHits = report.ModuleHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
-            report.PopupHits = report.PopupHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
-            report.TopIPs = report.TopIPs.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
-            report.ErrorPages = report.ErrorPages.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
-            report.HourlyHits = report.HourlyHits.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
-            
-            report.DocumentHits = report.DocumentHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
-            foreach (var kvp in docTracking)
+            catch
             {
-                report.DocumentAvgTime[kvp.Key] = (int)(kvp.Value.TotalTime / kvp.Value.Hits);
+                // Ignore file-level parse errors; partial data is fine.
             }
-            
-            var sortedSlowPages = slowTracking
-                .ToDictionary(kvp => kvp.Key, kvp => (int)(kvp.Value.TotalTime / kvp.Value.Hits))
-                .OrderByDescending(x => x.Value)
-                .ToDictionary(x => x.Key, x => x.Value);
-            report.SlowPages = sortedSlowPages;
 
-            return report;
+            return new FileParseResult
+            {
+                Report = report,
+                DocumentTracking = docTracking,
+                SlowTracking = slowTracking
+            };
         }
 
         private string BuildPageLabel(string stem, string query, string? tabName, string? moduleName)
