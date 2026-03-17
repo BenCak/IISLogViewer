@@ -21,12 +21,12 @@ else
                 <tr>
                     <th>
                         <button type="button" class="btn btn-link btn-sm p-0" @onclick="() => ToggleSort(nameof(LabelValueRow.Label))">
-                            @LabelHeader @SortGlyph(nameof(LabelValueRow.Label))
+                            Label @SortGlyph(nameof(LabelValueRow.Label))
                         </button>
                     </th>
                     <th class="text-end" style="width: 140px;">
                         <button type="button" class="btn btn-link btn-sm p-0" @onclick="() => ToggleSort(nameof(LabelValueRow.ValueLabel))">
-                            @ValueHeader @SortGlyph(nameof(LabelValueRow.ValueLabel))
+                            Hits @SortGlyph(nameof(LabelValueRow.ValueLabel))
                         </button>
                     </th>
                 </tr>
@@ -49,8 +49,6 @@ else
 @code {
     [Parameter] public string Title { get; set; } = "";
     [Parameter] public string Placeholder { get; set; } = "";
-    [Parameter] public string LabelHeader { get; set; } = "Label";
-    [Parameter] public string ValueHeader { get; set; } = "Hits";
 
     [Parameter] public string SearchValue { get; set; } = "";
     [Parameter] public EventCallback<string> SearchValueChanged { get; set; }

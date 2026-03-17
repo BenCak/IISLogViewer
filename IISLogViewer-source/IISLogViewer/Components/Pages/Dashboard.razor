@@ -1,0 +1,138 @@
+@page "/"
+@rendermode InteractiveServer
+@inject IISLogViewer.Services.LogParserService LogParser
+
+<div class="page-header">
+    <div>
+        <h1>Overall Summary</h1>
+        <p>Total Files: @TotalFiles | Years: @TotalYears | Date Range: @DateRange</p>
+    </div>
+</div>
+
+
+@if (OverallReport != null)
+{
+    <div class="stats-grid">
+        <article class="stat-card">
+            <div class="stat-card__value">@OverallReport.TotalHits.ToString("N0")</div>
+            <div class="stat-card__label">Total Hits</div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--success">@SuccessCount.ToString("N0")</div>
+            <div class="stat-card__label">Successful (2xx/3xx)</div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--warning">@ClientErrorCount.ToString("N0")</div>
+            <div class="stat-card__label">Client Errors (4xx)</div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--error">@ServerErrorCount.ToString("N0")</div>
+            <div class="stat-card__label">Server Errors (5xx)</div>
+        </article>
+    </div>
+
+    <section class="surface-panel">
+        <Report ReportData="OverallReport" />
+    </section>
+}
+else
+{
+    <div class="loading-state">Loading dashboard...</div>
+}
+
+<style>
+    .page-header h1 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+
+    .page-header p {
+        margin: 0.35rem 0 1.25rem;
+        color: var(--shell-subtle);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-card {
+        padding: 1.2rem;
+        border: 1px solid var(--shell-border);
+        border-radius: 18px;
+        background: var(--shell-panel-muted);
+        text-align: center;
+    }
+
+    .stat-card__value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--shell-primary);
+    }
+
+    .stat-card__value--success { color: #28a745; }
+    .stat-card__value--warning { color: #ff9800; }
+    .stat-card__value--error { color: #f44336; }
+
+    .stat-card__label {
+        margin-top: 0.4rem;
+        color: var(--shell-subtle);
+    }
+
+    .surface-panel {
+        border: 1px solid var(--shell-border);
+        border-radius: 18px;
+        padding: 1rem;
+        background: var(--shell-panel);
+    }
+
+    .loading-state {
+        padding: 2rem 0;
+        color: var(--shell-subtle);
+    }
+</style>
+
+@code {
+    private IISLogViewer.Services.LogReport? OverallReport;
+    private int SuccessCount;
+    private int ClientErrorCount;
+    private int ServerErrorCount;
+    private int TotalFiles;
+    private int TotalYears;
+    private string DateRange = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Run(() =>
+        {
+            var tree = LogParser.GetLogTree();
+            TotalYears = tree.Count;
+            TotalFiles = tree.Values.SelectMany(m => m.Values).SelectMany(d => d).Count();
+
+            var allDates = tree.Values.SelectMany(m => m.Values).SelectMany(d => d).OrderBy(d => d).ToList();
+            if (allDates.Any())
+                DateRange = $"{allDates.First():dd MMM yyyy} — {allDates.Last():dd MMM yyyy}";
+        });
+
+        // Await the parse call outside the Task.Run so Blazor handles the async context naturally
+        OverallReport = await LogParser.ParseAll();
+
+        SuccessCount = OverallReport.StatusCodes
+            .Where(s => s.Key >= 200 && s.Key < 400)
+            .Sum(s => s.Value);
+
+        ClientErrorCount = OverallReport.StatusCodes
+            .Where(s => s.Key >= 400 && s.Key < 500)
+            .Sum(s => s.Value);
+
+        ServerErrorCount = OverallReport.StatusCodes
+            .Where(s => s.Key >= 500)
+            .Sum(s => s.Value);
+    }
+}
