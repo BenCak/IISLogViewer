@@ -1,0 +1,109 @@
+@namespace IISLogViewer.Components.Shared
+
+<div class="grid-toolbar">
+    <div><h3>@Title</h3></div>
+    <input class="form-control form-control-sm"
+           style="max-width: 260px;"
+           placeholder="@Placeholder"
+           value="@SearchValue"
+           @oninput="OnInputChanged" />
+</div>
+
+@if (!Rows.Any())
+{
+    <div class="empty-state">No data found.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th>
+                        <button type="button" class="btn btn-link btn-sm p-0" @onclick="() => ToggleSort(nameof(LabelValueRow.Label))">
+                            Label @SortGlyph(nameof(LabelValueRow.Label))
+                        </button>
+                    </th>
+                    <th class="text-end" style="width: 140px;">
+                        <button type="button" class="btn btn-link btn-sm p-0" @onclick="() => ToggleSort(nameof(LabelValueRow.ValueLabel))">
+                            Hits @SortGlyph(nameof(LabelValueRow.ValueLabel))
+                        </button>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in PagedRows)
+                {
+                    <tr>
+                        <td>@r.Label</td>
+                        <td class="text-end">@r.ValueLabel</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <Pager CurrentPage="@_page" TotalPages="@PageCount" OnPageChanged="@(p => _page = p)" />
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Placeholder { get; set; } = "";
+
+    [Parameter] public string SearchValue { get; set; } = "";
+    [Parameter] public EventCallback<string> SearchValueChanged { get; set; }
+
+    [Parameter] public IEnumerable<LabelValueRow> Rows { get; set; } = Array.Empty<LabelValueRow>();
+
+    private const int PageSize = 12;
+
+    private int _page = 1;
+    private string _sortField = nameof(LabelValueRow.ValueLabel);
+    private bool _sortDesc = true;
+
+    private IEnumerable<LabelValueRow> SortedRows =>
+        Sort(Rows, _sortField, _sortDesc);
+
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(SortedRows.Count() / (double)PageSize));
+
+    private IEnumerable<LabelValueRow> PagedRows =>
+        SortedRows
+            .Skip((Math.Clamp(_page, 1, PageCount) - 1) * PageSize)
+            .Take(PageSize);
+
+    private async Task OnInputChanged(ChangeEventArgs e)
+    {
+        _page = 1;
+        await SearchValueChanged.InvokeAsync(e.Value?.ToString() ?? "");
+    }
+
+    private void ToggleSort(string field)
+    {
+        if (_sortField == field)
+        {
+            _sortDesc = !_sortDesc;
+            return;
+        }
+
+        _sortField = field;
+        _sortDesc = true;
+        _page = 1;
+    }
+
+    private string SortGlyph(string field) =>
+        _sortField == field ? (_sortDesc ? "▼" : "▲") : "";
+
+    private static IEnumerable<LabelValueRow> Sort(IEnumerable<LabelValueRow> rows, string field, bool desc)
+    {
+        Func<LabelValueRow, object> key = field switch
+        {
+            nameof(LabelValueRow.Label) => r => r.Label,
+            _ => r => ParseNumber(r.ValueLabel)
+        };
+        return desc ? rows.OrderByDescending(key) : rows.OrderBy(key);
+    }
+
+    private static int ParseNumber(string formatted) =>
+        int.TryParse(formatted.Replace(",", string.Empty), out var parsed) ? parsed : 0;
+
+}

@@ -1,0 +1,17 @@
+services:
+  iislogviewer:
+    image: iislogviewer:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iislogviewer
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount your host IIS log directory into the container.
+      # Change the left side to the actual path where your IIS logs live.
+      - ./LogFiles:/app/LogFiles
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_HTTP_PORTS=8080
+    restart: unless-stopped
