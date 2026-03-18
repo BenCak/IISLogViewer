@@ -298,17 +298,7 @@ namespace IISLogViewer.Services
                         var fieldMap = fields.Select((f, i) => new { f, i })
                                             .ToDictionary(x => x.f, x => parts[x.i]);
 
-                        report.TotalHits++;
-
-                        // Track hourly traffic
-                        if (fieldMap.TryGetValue("time", out var timeStr) &&
-                            TimeSpan.TryParse(timeStr, out var timeVal))
-                        {
-                            int hour = timeVal.Hours;
-                            if (!report.HourlyHits.ContainsKey(hour))
-                                report.HourlyHits[hour] = 0;
-                            report.HourlyHits[hour]++;
-                        }
+                        
 
                         string uriStem = "";
                         string uriQuery = "";
@@ -333,6 +323,18 @@ namespace IISLogViewer.Services
                             int.TryParse(ttStr, out var tt))
                             timeTaken = tt;
 
+                        
+                        report.TotalHits++;
+
+                        // Track hourly traffic
+                        if (fieldMap.TryGetValue("time", out var timeStr) &&
+                            TimeSpan.TryParse(timeStr, out var timeVal))
+                        {
+                            int hour = timeVal.Hours;
+                            if (!report.HourlyHits.ContainsKey(hour))
+                                report.HourlyHits[hour] = 0;
+                            report.HourlyHits[hour]++;
+                        }
                         // Increment Status Code
                         if (statusCode > 0)
                         {
