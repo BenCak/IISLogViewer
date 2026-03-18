@@ -8,12 +8,13 @@ builder.Services.AddRazorComponents()
 builder.Services.AddScoped<IISLogViewer.Services.SelectionState>();
 
 var logRoot = builder.Configuration["LogViewer:RootDirectory"];
+var timeZoneId = builder.Configuration["LogViewer:TimeZoneId"];
 if (string.IsNullOrWhiteSpace(logRoot))
 {
     logRoot = Path.Combine(Directory.GetCurrentDirectory(), "LogFiles");
 }
 
-builder.Services.AddSingleton(new IISLogViewer.Services.LogParserService(logRoot));
+builder.Services.AddSingleton(new IISLogViewer.Services.LogParserService(logRoot, timeZoneId));
 
 var app = builder.Build();
 

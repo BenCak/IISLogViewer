@@ -45,6 +45,9 @@ namespace IISLogViewer.Services
     {
         private string _logDirectory;
         private readonly string _rootDirectory;
+        private readonly TimeZoneInfo _targetTimeZone;
+
+        public string TargetTimeZoneId => _targetTimeZone.Id;
         
         // Caches for expensive operations
         private Dictionary<int, Dictionary<int, List<DateTime>>>? _cachedTree;
@@ -52,10 +55,11 @@ namespace IISLogViewer.Services
         private LogReport? _cachedAllReport;
         private string _cachedAllFolder = "";
 
-        public LogParserService(string rootDirectory)
+        public LogParserService(string rootDirectory, string? timeZoneId = null)
         {
             _rootDirectory = rootDirectory;
             _logDirectory = rootDirectory;
+            _targetTimeZone = ResolveTimeZone(timeZoneId);
         }
 
     public string CurrentFolder => _logDirectory;
@@ -314,6 +318,7 @@ namespace IISLogViewer.Services
             var report = new LogReport();
             var docTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
             var slowTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
+            var fallbackDate = ExtractDateFromFilename(Path.GetFileName(path));
 
             try
             {
@@ -370,12 +375,11 @@ namespace IISLogViewer.Services
                         
                         report.TotalHits++;
 
-                        // Track hourly traffic
+                        // Track hourly traffic in configured local timezone (IIS timestamp is UTC)
                         int? hourForBreakdown = null;
-                        if (fieldMap.TryGetValue("time", out var timeStr) &&
-                            TimeSpan.TryParse(timeStr, out var timeVal))
+                        if (TryGetLocalHour(fieldMap, fallbackDate, out var localHour))
                         {
-                            int hour = timeVal.Hours;
+                            int hour = localHour;
                             if (!report.HourlyHits.ContainsKey(hour))
                                 report.HourlyHits[hour] = 0;
                             report.HourlyHits[hour]++;
@@ -550,6 +554,57 @@ namespace IISLogViewer.Services
                 bucket[key] = existing + 1;
             else
                 bucket[key] = 1;
+        }
+
+        private bool TryGetLocalHour(Dictionary<string, string> fieldMap, DateTime? fallbackDate, out int localHour)
+        {
+            localHour = 0;
+
+            if (!fieldMap.TryGetValue("time", out var timeStr) ||
+                !TimeSpan.TryParse(timeStr, out var timeVal))
+            {
+                return false;
+            }
+
+            DateTime datePart;
+            if (fieldMap.TryGetValue("date", out var dateStr) &&
+                DateTime.TryParseExact(
+                    dateStr,
+                    "yyyy-MM-dd",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None,
+                    out var parsedDate))
+            {
+                datePart = parsedDate.Date;
+            }
+            else if (fallbackDate.HasValue)
+            {
+                datePart = fallbackDate.Value.Date;
+            }
+            else
+            {
+                localHour = timeVal.Hours;
+                return true;
+            }
+
+            var utcDateTime = DateTime.SpecifyKind(datePart.Add(timeVal), DateTimeKind.Utc);
+            localHour = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, _targetTimeZone).Hour;
+            return true;
+        }
+
+        private static TimeZoneInfo ResolveTimeZone(string? timeZoneId)
+        {
+            if (string.IsNullOrWhiteSpace(timeZoneId))
+                return TimeZoneInfo.Local;
+
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId.Trim());
+            }
+            catch
+            {
+                return TimeZoneInfo.Local;
+            }
         }
 
         private DateTime? ExtractDateFromFilename(string filename)
