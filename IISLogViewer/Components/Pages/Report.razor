@@ -1,3 +1,5 @@
+@inject IISLogViewer.Services.LogParserService LogParserService
+
 <div class="report-tabs">
     <div class="report-tabs__bar" role="tablist" aria-label="Report tabs">
         @foreach (var tab in Tabs)
@@ -186,7 +188,10 @@
         else if (ActiveTab == TabName.HourlyHits)
         {
             <div class="grid-toolbar">
-                <div><h3>Hourly Hits</h3></div>
+                <div>
+                    <h3>Hourly Hits</h3>
+                    <div class="toolbar-subtle">Timezone: @LogParserService.TargetTimeZoneId</div>
+                </div>
                 <input class="form-control form-control-sm"
                        style="max-width: 260px;"
                        placeholder="Search hours"
@@ -273,6 +278,12 @@
         font-weight: 700;
         color: var(--shell-text) !important;
         opacity: 1 !important;
+    }
+
+    .toolbar-subtle {
+        margin-top: 0.2rem;
+        font-size: 0.8rem;
+        color: var(--shell-subtle);
     }
 
     .empty-state {
