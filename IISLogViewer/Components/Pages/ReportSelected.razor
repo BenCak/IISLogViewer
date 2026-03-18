@@ -14,11 +14,17 @@
         Select dates from the tree on the left to generate a report.
     </div>
 }
-else if (CurrentReport == null)
+else if (_isLoading)
 {
     <div class="loading-state">
         <span class="loading-state__spinner"></span>
-        <span>Loading report...</span>
+        <span>Loading report for @SelectionState.SelectedDays.Count day(s)...</span>
+    </div>
+}
+else if (CurrentReport == null)
+{
+    <div class="info-banner">
+        No data was returned for the selected dates.
     </div>
 }
 else
@@ -127,6 +133,7 @@ else
     private int SuccessCount;
     private int ClientErrorCount;
     private int ServerErrorCount;
+    private bool _isLoading;
 
     protected override async Task OnInitializedAsync()
     {
@@ -142,37 +149,47 @@ else
 
     private async Task LoadReport()
     {
-        CurrentReport = null; // show loading state
+        _isLoading = true;
+        CurrentReport = null;
+        await InvokeAsync(StateHasChanged);
 
-        if (!SelectionState.SelectedDays.Any())
+        try
         {
-            ReportTitle = "Report";
-            return;
+            if (!SelectionState.SelectedDays.Any())
+            {
+                ReportTitle = "Report";
+                return;
+            }
+
+            var days = SelectionState.SelectedDays.ToList();
+
+            ReportTitle = days.Count == 1
+                ? $"Report for {days[0]:dddd, dd MMMM yyyy}"
+                : $"Report for {days.Count} selected days ({days.Min():dd MMM yyyy} — {days.Max():dd MMM yyyy})";
+
+            if (days.Count == 1)
+            {
+                CurrentReport = await LogParser.ParseFile(days[0]);
+            }
+            else
+            {
+                CurrentReport = await LogParser.ParseDates(days);
+            }
+
+            if (CurrentReport != null)
+            {
+                SuccessCount = CurrentReport.StatusCodes
+                    .Where(s => s.Key >= 200 && s.Key < 400).Sum(s => s.Value);
+                ClientErrorCount = CurrentReport.StatusCodes
+                    .Where(s => s.Key >= 400 && s.Key < 500).Sum(s => s.Value);
+                ServerErrorCount = CurrentReport.StatusCodes
+                    .Where(s => s.Key >= 500).Sum(s => s.Value);
+            }
         }
-
-        var days = SelectionState.SelectedDays.ToList();
-
-        ReportTitle = days.Count == 1
-            ? $"Report for {days[0]:dddd, dd MMMM yyyy}"
-            : $"Report for {days.Count} selected days ({days.Min():dd MMM yyyy} — {days.Max():dd MMM yyyy})";
-
-        if (days.Count == 1)
+        finally
         {
-            CurrentReport = await LogParser.ParseFile(days[0]);
-        }
-        else
-        {
-            CurrentReport = await LogParser.ParseDates(days);
-        }
-
-        if (CurrentReport != null)
-        {
-            SuccessCount = CurrentReport.StatusCodes
-                .Where(s => s.Key >= 200 && s.Key < 400).Sum(s => s.Value);
-            ClientErrorCount = CurrentReport.StatusCodes
-                .Where(s => s.Key >= 400 && s.Key < 500).Sum(s => s.Value);
-            ServerErrorCount = CurrentReport.StatusCodes
-                .Where(s => s.Key >= 500).Sum(s => s.Value);
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 
