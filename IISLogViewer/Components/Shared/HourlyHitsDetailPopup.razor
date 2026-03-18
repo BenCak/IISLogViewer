@@ -1,0 +1,201 @@
+@if (IsOpen)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.2);">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hourly Details - @SelectedHourLabel:00:00</h5>
+                    <button type="button" class="btn-close" @onclick="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <section class="hourly-section">
+                        <button type="button" class="hourly-section__toggle" @onclick="() => ToggleSection(SectionPages)">
+                            Top Pages
+                        </button>
+                        @if (IsSectionOpen(SectionPages))
+                        {
+                            <div class="hourly-section__content">
+                                @RenderList(TopPages, "No page hits for this hour.")
+                            </div>
+                        }
+                    </section>
+
+                    <section class="hourly-section">
+                        <button type="button" class="hourly-section__toggle" @onclick="() => ToggleSection(SectionDocuments)">
+                            Top Documents
+                        </button>
+                        @if (IsSectionOpen(SectionDocuments))
+                        {
+                            <div class="hourly-section__content">
+                                @RenderList(TopDocuments, "No document hits for this hour.")
+                            </div>
+                        }
+                    </section>
+
+                    <section class="hourly-section mb-0">
+                        <button type="button" class="hourly-section__toggle" @onclick="() => ToggleSection(SectionPopups)">
+                            Top Popups
+                        </button>
+                        @if (IsSectionOpen(SectionPopups))
+                        {
+                            <div class="hourly-section__content">
+                                @RenderList(TopPopups, "No popup hits for this hour.")
+                            </div>
+                        }
+                    </section>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="Close">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .hourly-section {
+        margin-bottom: 1rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.35rem;
+        background: var(--bs-body-bg);
+    }
+
+    .hourly-section__toggle {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        padding: 0.55rem 0.7rem;
+        text-align: left;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .hourly-section__content {
+        border-bottom: 1px solid var(--bs-border-color);
+        padding: 0.25rem 0.6rem 0.35rem;
+    }
+
+    .hourly-section .table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .hourly-section .table th:first-child,
+    .hourly-section .table td:first-child {
+        width: calc(100% - 88px);
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .hourly-section .table th:last-child,
+    .hourly-section .table td:last-child {
+        width: 88px;
+        white-space: nowrap;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public int SelectedHour { get; set; }
+
+    [Parameter]
+    public IISLogViewer.Services.LogReport? ReportData { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private const string SectionPages = "pages";
+    private const string SectionDocuments = "documents";
+    private const string SectionPopups = "popups";
+
+    private string _openSection = SectionPages;
+
+    private const int MaxRows = 12;
+
+    private string SelectedHourLabel => SelectedHour.ToString("D2");
+
+    private IEnumerable<KeyValuePair<string, int>> TopPages =>
+        GetTopByHour(ReportData?.HourlyPageHits, SelectedHour);
+
+    private IEnumerable<KeyValuePair<string, int>> TopDocuments =>
+        GetTopByHour(ReportData?.HourlyDocumentHits, SelectedHour);
+
+    private IEnumerable<KeyValuePair<string, int>> TopPopups =>
+        GetTopByHour(ReportData?.HourlyPopupHits, SelectedHour);
+
+    private static IEnumerable<KeyValuePair<string, int>> GetTopByHour(
+        Dictionary<int, Dictionary<string, int>>? source,
+        int hour)
+    {
+        if (source == null || !source.TryGetValue(hour, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<string, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Take(MaxRows);
+    }
+
+    private RenderFragment RenderList(IEnumerable<KeyValuePair<string, int>> rows, string emptyMessage) => builder =>
+    {
+        var list = rows.ToList();
+        if (!list.Any())
+        {
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", "text-muted small");
+            builder.AddContent(2, emptyMessage);
+            builder.CloseElement();
+            return;
+        }
+
+        builder.OpenElement(3, "table");
+        builder.AddAttribute(4, "class", "table table-sm align-middle mb-0");
+
+        builder.OpenElement(5, "thead");
+        builder.OpenElement(6, "tr");
+        builder.OpenElement(7, "th");
+        builder.AddContent(8, "Item");
+        builder.CloseElement();
+        builder.OpenElement(9, "th");
+        builder.AddAttribute(10, "class", "text-end");
+        builder.AddContent(11, "Hits");
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+
+        builder.OpenElement(12, "tbody");
+        var seq = 13;
+        foreach (var row in list)
+        {
+            builder.OpenElement(seq++, "tr");
+
+            builder.OpenElement(seq++, "td");
+            builder.AddAttribute(seq++, "class", "small");
+            builder.AddContent(seq++, row.Key);
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "td");
+            builder.AddAttribute(seq++, "class", "text-end");
+            builder.AddContent(seq++, row.Value.ToString("N0"));
+            builder.CloseElement();
+
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
+        builder.CloseElement();
+    };
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private void ToggleSection(string section)
+    {
+        _openSection = _openSection == section ? string.Empty : section;
+    }
+
+    private bool IsSectionOpen(string section) =>
+        string.Equals(_openSection, section, StringComparison.OrdinalIgnoreCase);
+}

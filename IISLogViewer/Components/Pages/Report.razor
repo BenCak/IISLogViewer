@@ -212,7 +212,13 @@
                             @foreach (var r in PagedHours)
                             {
                                 <tr>
-                                    <td>@r.HourLabel</td>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-link btn-sm p-0"
+                                                @onclick="() => OpenHourlyPopup(r.HourLabel)">
+                                            @r.HourLabel
+                                        </button>
+                                    </td>
                                     <td class="text-end">@r.HitsLabel</td>
                                 </tr>
                             }
@@ -224,6 +230,11 @@
                        TotalPages="@HourPageCount"
                        OnPageChanged="@(p => _hourPage = p)" />
             }
+
+            <HourlyHitsDetailPopup IsOpen="@_showHourlyDetailsPopup"
+                                   SelectedHour="@_selectedHour"
+                                   ReportData="@ReportData"
+                                   OnClose="CloseHourlyPopup" />
         }
     </div>
 </div>
@@ -408,6 +419,9 @@
     private string _hourSortField = nameof(HourRow.HitsLabel);
     private bool _hourSortDesc = true;
 
+    private bool _showHourlyDetailsPopup;
+    private int _selectedHour;
+
     private static int ParseNumber(string formatted) =>
         int.TryParse(formatted.Replace(",", string.Empty), out var parsed) ? parsed : 0;
 
@@ -514,5 +528,19 @@
 
         sortField = field;
         sortDesc = true;
+    }
+
+    private void OpenHourlyPopup(string hourLabel)
+    {
+        if (!int.TryParse(hourLabel, out var parsedHour))
+            return;
+
+        _selectedHour = parsedHour;
+        _showHourlyDetailsPopup = true;
+    }
+
+    private void CloseHourlyPopup()
+    {
+        _showHourlyDetailsPopup = false;
     }
 }
