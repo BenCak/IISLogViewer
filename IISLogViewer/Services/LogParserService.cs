@@ -36,6 +36,9 @@ namespace IISLogViewer.Services
         public Dictionary<int, int> StatusCodes { get; set; } = new();
         public Dictionary<string, int> SlowPages { get; set; } = new();
         public Dictionary<int, int> HourlyHits { get; set; } = new();
+        public Dictionary<int, Dictionary<string, int>> HourlyPageHits { get; set; } = new();
+        public Dictionary<int, Dictionary<string, int>> HourlyDocumentHits { get; set; } = new();
+        public Dictionary<int, Dictionary<string, int>> HourlyPopupHits { get; set; } = new();
     }
 
     public class LogParserService
@@ -209,6 +212,9 @@ namespace IISLogViewer.Services
                 MergeDictionary(report.ErrorPages, r.ErrorPages);
                 MergeDictionary(report.StatusCodes, r.StatusCodes);
                 MergeDictionary(report.HourlyHits, r.HourlyHits);
+                MergeNestedDictionary(report.HourlyPageHits, r.HourlyPageHits);
+                MergeNestedDictionary(report.HourlyDocumentHits, r.HourlyDocumentHits);
+                MergeNestedDictionary(report.HourlyPopupHits, r.HourlyPopupHits);
 
                 MergeTracking(docTracking, res.DocumentTracking);
                 MergeTracking(slowTracking, res.SlowTracking);
@@ -222,6 +228,9 @@ namespace IISLogViewer.Services
             report.TopIPs = report.TopIPs.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
             report.ErrorPages = report.ErrorPages.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
             report.HourlyHits = report.HourlyHits.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+            report.HourlyPageHits = SortNestedHourMap(report.HourlyPageHits);
+            report.HourlyDocumentHits = SortNestedHourMap(report.HourlyDocumentHits);
+            report.HourlyPopupHits = SortNestedHourMap(report.HourlyPopupHits);
 
             report.DocumentHits = report.DocumentHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
             foreach (var kvp in docTracking)
@@ -263,6 +272,41 @@ namespace IISLogViewer.Services
                     existing.TotalTime += tracker.TotalTime;
                 }
             }
+        }
+
+        private static void MergeNestedDictionary(
+            Dictionary<int, Dictionary<string, int>> target,
+            Dictionary<int, Dictionary<string, int>> source)
+        {
+            foreach (var (hour, bucket) in source)
+            {
+                if (!target.TryGetValue(hour, out var targetBucket))
+                {
+                    targetBucket = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    target[hour] = targetBucket;
+                }
+
+                foreach (var (key, count) in bucket)
+                {
+                    if (targetBucket.TryGetValue(key, out var existing))
+                        targetBucket[key] = existing + count;
+                    else
+                        targetBucket[key] = count;
+                }
+            }
+        }
+
+        private static Dictionary<int, Dictionary<string, int>> SortNestedHourMap(
+            Dictionary<int, Dictionary<string, int>> source)
+        {
+            return source
+                .OrderBy(x => x.Key)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.Value
+                        .OrderByDescending(i => i.Value)
+                        .ThenBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(i => i.Key, i => i.Value, StringComparer.OrdinalIgnoreCase));
         }
 
         private FileParseResult ParseSingleFile(string path)
@@ -327,6 +371,7 @@ namespace IISLogViewer.Services
                         report.TotalHits++;
 
                         // Track hourly traffic
+                        int? hourForBreakdown = null;
                         if (fieldMap.TryGetValue("time", out var timeStr) &&
                             TimeSpan.TryParse(timeStr, out var timeVal))
                         {
@@ -334,6 +379,7 @@ namespace IISLogViewer.Services
                             if (!report.HourlyHits.ContainsKey(hour))
                                 report.HourlyHits[hour] = 0;
                             report.HourlyHits[hour]++;
+                            hourForBreakdown = hour;
                         }
                         // Increment Status Code
                         if (statusCode > 0)
@@ -406,6 +452,9 @@ namespace IISLogViewer.Services
                                 docTracking[uriStem] = new AggregateTracker();
                             docTracking[uriStem].Hits++;
                             docTracking[uriStem].TotalTime += timeTaken;
+
+                            if (hourForBreakdown.HasValue)
+                                IncrementHourlyBucket(report.HourlyDocumentHits, hourForBreakdown.Value, uriStem);
                         }
                         else
                         {
@@ -415,6 +464,9 @@ namespace IISLogViewer.Services
                             if (!report.PageHits.ContainsKey(pageLabel))
                                 report.PageHits[pageLabel] = 0;
                             report.PageHits[pageLabel]++;
+
+                            if (hourForBreakdown.HasValue)
+                                IncrementHourlyBucket(report.HourlyPageHits, hourForBreakdown.Value, pageLabel);
 
                             // Track Slow Pages Time
                             if (timeTaken > 0)
@@ -448,6 +500,9 @@ namespace IISLogViewer.Services
                                 if (!report.PopupHits.ContainsKey(popLabel))
                                     report.PopupHits[popLabel] = 0;
                                 report.PopupHits[popLabel]++;
+
+                                if (hourForBreakdown.HasValue)
+                                    IncrementHourlyBucket(report.HourlyPopupHits, hourForBreakdown.Value, popLabel);
                             }
                         }
                     }
@@ -481,6 +536,20 @@ namespace IISLogViewer.Services
                 return $"{stem}{formattedQuery} (Tab={tabName})";
 
             return stem;
+        }
+
+        private static void IncrementHourlyBucket(Dictionary<int, Dictionary<string, int>> map, int hour, string key)
+        {
+            if (!map.TryGetValue(hour, out var bucket))
+            {
+                bucket = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                map[hour] = bucket;
+            }
+
+            if (bucket.TryGetValue(key, out var existing))
+                bucket[key] = existing + 1;
+            else
+                bucket[key] = 1;
         }
 
         private DateTime? ExtractDateFromFilename(string filename)

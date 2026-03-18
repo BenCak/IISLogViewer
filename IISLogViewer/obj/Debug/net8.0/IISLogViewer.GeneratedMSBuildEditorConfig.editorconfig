@@ -50,6 +50,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Sb3V0ZXMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
+[/home/ben/code/IISLogViewer/Components/Shared/HourlyHitsDetailPopup.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvSG91cmx5SGl0c0RldGFpbFBvcHVwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [/home/ben/code/IISLogViewer/Components/Shared/LabelValueSection.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TaGFyZWQvTGFiZWxWYWx1ZVNlY3Rpb24ucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
