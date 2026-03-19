@@ -1,0 +1,479 @@
+@if (IsOpen)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,0.2);">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title">User Details - @HeaderDisplayName</h5>
+                        <div class="text-muted small">@HeaderSubTitle</div>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @if (PeakHourSummary is not null)
+                    {
+                        <div class="user-peak-summary">
+                            Most Active Hour: <strong>@PeakHourSummary.HourLabel</strong>
+                            <span class="text-muted">(@PeakHourSummary.Hits.ToString("N0") hits, @PeakHourSummary.PercentageLabel)</span>
+                        </div>
+                    }
+
+                    <section class="user-section">
+                        <button type="button" class="user-section__toggle" @onclick="() => ToggleSection(SectionHours)">
+                            Active Hours
+                        </button>
+                        @if (IsSectionOpen(SectionHours))
+                        {
+                            <div class="user-section__content">
+                                @RenderHoursList(TopHours, "No hourly activity for this user.")
+                            </div>
+                        }
+                    </section>
+
+                    <section class="user-section">
+                        <button type="button" class="user-section__toggle" @onclick="() => ToggleSection(SectionWeekdays)">
+                            Weekday Activity
+                        </button>
+                        @if (IsSectionOpen(SectionWeekdays))
+                        {
+                            <div class="user-section__content">
+                                @RenderWeekdaysList(WeekdayRows, "No weekday activity for this user.")
+                            </div>
+                        }
+                    </section>
+
+                    <section class="user-section">
+                        <button type="button" class="user-section__toggle" @onclick="() => ToggleSection(SectionPages)">
+                            Top Pages
+                        </button>
+                        @if (IsSectionOpen(SectionPages))
+                        {
+                            <div class="user-section__content">
+                                @RenderList(TopPages, "No page hits for this user.", "Page")
+                            </div>
+                        }
+                    </section>
+
+                    <section class="user-section">
+                        <button type="button" class="user-section__toggle" @onclick="() => ToggleSection(SectionDocuments)">
+                            Top Documents
+                        </button>
+                        @if (IsSectionOpen(SectionDocuments))
+                        {
+                            <div class="user-section__content">
+                                @RenderList(TopDocuments, "No document hits for this user.", "Document")
+                            </div>
+                        }
+                    </section>
+
+                    <section class="user-section">
+                        <button type="button" class="user-section__toggle" @onclick="() => ToggleSection(SectionPopups)">
+                            Top Popups
+                        </button>
+                        @if (IsSectionOpen(SectionPopups))
+                        {
+                            <div class="user-section__content">
+                                @RenderList(TopPopups, "No popup hits for this user.", "Popup")
+                            </div>
+                        }
+                    </section>
+
+                    <section class="user-section mb-0">
+                        <button type="button" class="user-section__toggle" @onclick="() => ToggleSection(SectionStatus)">
+                            Status Codes
+                        </button>
+                        @if (IsSectionOpen(SectionStatus))
+                        {
+                            <div class="user-section__content">
+                                @RenderList(TopStatusCodes, "No status code data for this user.", "Status")
+                            </div>
+                        }
+                    </section>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="Close">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .user-peak-summary {
+        margin-bottom: 0.75rem;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.35rem;
+        background: var(--bs-body-bg);
+        font-size: 0.9rem;
+    }
+
+    .user-section {
+        margin-bottom: 1rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.35rem;
+        background: var(--bs-body-bg);
+    }
+
+    .user-section__toggle {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        padding: 0.55rem 0.7rem;
+        text-align: left;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .user-section__content {
+        border-bottom: 1px solid var(--bs-border-color);
+        padding: 0.25rem 0.6rem 0.35rem;
+    }
+
+    .user-section .table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .user-section .table th:first-child,
+    .user-section .table td:first-child {
+        width: calc(100% - 88px);
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .user-section .table th:last-child,
+    .user-section .table td:last-child {
+        width: 88px;
+        white-space: nowrap;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public string SelectedUser { get; set; } = "";
+
+    [Parameter]
+    public string SelectedUserDisplayName { get; set; } = "";
+
+    [Parameter]
+    public IISLogViewer.Services.LogReport? ReportData { get; set; }
+
+    [Inject]
+    public IISLogViewer.Services.LogParserService LogParserService { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private const string SectionPages = "pages";
+    private const string SectionDocuments = "documents";
+    private const string SectionPopups = "popups";
+    private const string SectionStatus = "status";
+    private const string SectionHours = "hours";
+    private const string SectionWeekdays = "weekdays";
+
+    private string _openSection = SectionHours;
+
+    private const int MaxRows = 12;
+
+    private IISLogViewer.Services.UserProfile? SelectedProfile =>
+        string.IsNullOrWhiteSpace(SelectedUser) ? null : LogParserService.GetUserProfile(SelectedUser);
+
+    private string HeaderDisplayName =>
+        string.IsNullOrWhiteSpace(SelectedUserDisplayName) ? SelectedUser : SelectedUserDisplayName;
+
+    private string HeaderSubTitle
+    {
+        get
+        {
+            var parts = new List<string> { SelectedUser };
+            if (!string.IsNullOrWhiteSpace(SelectedProfile?.Department))
+                parts.Add(SelectedProfile.Department);
+            if (!string.IsNullOrWhiteSpace(SelectedProfile?.Email))
+                parts.Add(SelectedProfile.Email);
+            return string.Join(" | ", parts.Where(x => !string.IsNullOrWhiteSpace(x)));
+        }
+    }
+
+    private IEnumerable<KeyValuePair<string, int>> TopPages =>
+        GetTopByUser(ReportData?.UserPageHits, SelectedUser);
+
+    private IEnumerable<KeyValuePair<string, int>> TopDocuments =>
+        GetTopByUser(ReportData?.UserDocumentHits, SelectedUser);
+
+    private IEnumerable<KeyValuePair<string, int>> TopPopups =>
+        GetTopByUser(ReportData?.UserPopupHits, SelectedUser);
+
+    private IEnumerable<KeyValuePair<string, int>> TopStatusCodes =>
+        GetTopStatusByUser(ReportData?.UserStatusHits, SelectedUser)
+            .Select(item => new KeyValuePair<string, int>(item.Key.ToString(), item.Value));
+
+    private IEnumerable<KeyValuePair<int, int>> TopHours =>
+        GetTopHoursByUser(ReportData?.UserHourlyHits, SelectedUser);
+
+    private PeakHourInfo? PeakHourSummary => BuildPeakHour(TopHours, SelectedUserTotalHits);
+
+    private int SelectedUserTotalHits => ReportData?.UserHits.TryGetValue(SelectedUser, out var hits) == true ? hits : 0;
+
+    private IEnumerable<WeekdayRow> WeekdayRows => BuildWeekdayRows(ReportData?.UserWeekdayHits, SelectedUser, SelectedUserTotalHits);
+
+    private static IEnumerable<KeyValuePair<string, int>> GetTopByUser(
+        Dictionary<string, Dictionary<string, int>>? source,
+        string user)
+    {
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<string, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Take(MaxRows);
+    }
+
+    private static IEnumerable<KeyValuePair<int, int>> GetTopStatusByUser(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user)
+    {
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<int, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key)
+            .Take(MaxRows);
+    }
+
+    private static IEnumerable<KeyValuePair<int, int>> GetTopHoursByUser(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user)
+    {
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<int, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key)
+            .Take(MaxRows);
+    }
+
+    private static PeakHourInfo? BuildPeakHour(IEnumerable<KeyValuePair<int, int>> topHours, int totalHits)
+    {
+        if (totalHits <= 0)
+            return null;
+
+        var peak = topHours.FirstOrDefault();
+        if (peak.Value <= 0)
+            return null;
+
+        var percent = (peak.Value * 100.0) / totalHits;
+        return new PeakHourInfo(
+            $"{peak.Key:D2}:00-{peak.Key:D2}:59",
+            peak.Value,
+            $"{percent:F1}% of user traffic");
+    }
+
+    private static IEnumerable<WeekdayRow> BuildWeekdayRows(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user,
+        int totalHits)
+    {
+        var weekdayOrder = new[]
+        {
+            DayOfWeek.Monday,
+            DayOfWeek.Tuesday,
+            DayOfWeek.Wednesday,
+            DayOfWeek.Thursday,
+            DayOfWeek.Friday,
+            DayOfWeek.Saturday,
+            DayOfWeek.Sunday
+        };
+
+        var bucket = (source != null && !string.IsNullOrWhiteSpace(user) && source.TryGetValue(user, out var found))
+            ? found
+            : new Dictionary<int, int>();
+
+        foreach (var day in weekdayOrder)
+        {
+            var key = (int)day;
+            var hits = bucket.TryGetValue(key, out var value) ? value : 0;
+            var pct = totalHits > 0 ? (hits * 100.0) / totalHits : 0;
+            yield return new WeekdayRow(day.ToString()[..3], hits.ToString("N0"), $"{pct:F1}%");
+        }
+    }
+
+    private RenderFragment RenderList(IEnumerable<KeyValuePair<string, int>> rows, string emptyMessage, string itemHeader) => builder =>
+    {
+        var list = rows.ToList();
+        if (!list.Any())
+        {
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", "text-muted small");
+            builder.AddContent(2, emptyMessage);
+            builder.CloseElement();
+            return;
+        }
+
+        builder.OpenElement(3, "table");
+        builder.AddAttribute(4, "class", "table table-sm align-middle mb-0");
+
+        builder.OpenElement(5, "thead");
+        builder.OpenElement(6, "tr");
+        builder.OpenElement(7, "th");
+        builder.AddContent(8, itemHeader);
+        builder.CloseElement();
+        builder.OpenElement(9, "th");
+        builder.AddAttribute(10, "class", "text-end");
+        builder.AddContent(11, "Hits");
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+
+        builder.OpenElement(12, "tbody");
+        var seq = 13;
+        foreach (var row in list)
+        {
+            builder.OpenElement(seq++, "tr");
+
+            builder.OpenElement(seq++, "td");
+            builder.AddAttribute(seq++, "class", "small");
+            builder.AddContent(seq++, row.Key);
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "td");
+            builder.AddAttribute(seq++, "class", "text-end");
+            builder.AddContent(seq++, row.Value.ToString("N0"));
+            builder.CloseElement();
+
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
+        builder.CloseElement();
+    };
+
+    private RenderFragment RenderHoursList(IEnumerable<KeyValuePair<int, int>> rows, string emptyMessage) => builder =>
+    {
+        var list = rows.ToList();
+        if (!list.Any())
+        {
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", "text-muted small");
+            builder.AddContent(2, emptyMessage);
+            builder.CloseElement();
+            return;
+        }
+
+        builder.OpenElement(3, "table");
+        builder.AddAttribute(4, "class", "table table-sm align-middle mb-0");
+
+        builder.OpenElement(5, "thead");
+        builder.OpenElement(6, "tr");
+        builder.OpenElement(7, "th");
+        builder.AddContent(8, "Hour");
+        builder.CloseElement();
+        builder.OpenElement(9, "th");
+        builder.AddAttribute(10, "class", "text-end");
+        builder.AddContent(11, "Hits");
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+
+        builder.OpenElement(12, "tbody");
+        var seq = 13;
+        foreach (var row in list)
+        {
+            builder.OpenElement(seq++, "tr");
+
+            builder.OpenElement(seq++, "td");
+            builder.AddAttribute(seq++, "class", "small");
+            builder.AddContent(seq++, $"{row.Key:D2}:00-{row.Key:D2}:59");
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "td");
+            builder.AddAttribute(seq++, "class", "text-end");
+            builder.AddContent(seq++, row.Value.ToString("N0"));
+            builder.CloseElement();
+
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
+        builder.CloseElement();
+    };
+
+    private RenderFragment RenderWeekdaysList(IEnumerable<WeekdayRow> rows, string emptyMessage) => builder =>
+    {
+        var list = rows.ToList();
+        if (!list.Any())
+        {
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", "text-muted small");
+            builder.AddContent(2, emptyMessage);
+            builder.CloseElement();
+            return;
+        }
+
+        builder.OpenElement(3, "table");
+        builder.AddAttribute(4, "class", "table table-sm align-middle mb-0");
+
+        builder.OpenElement(5, "thead");
+        builder.OpenElement(6, "tr");
+        builder.OpenElement(7, "th");
+        builder.AddContent(8, "Day");
+        builder.CloseElement();
+        builder.OpenElement(9, "th");
+        builder.AddAttribute(10, "class", "text-end");
+        builder.AddContent(11, "Hits");
+        builder.CloseElement();
+        builder.OpenElement(12, "th");
+        builder.AddAttribute(13, "class", "text-end");
+        builder.AddContent(14, "Percent");
+        builder.CloseElement();
+        builder.CloseElement();
+        builder.CloseElement();
+
+        builder.OpenElement(15, "tbody");
+        var seq = 16;
+        foreach (var row in list)
+        {
+            builder.OpenElement(seq++, "tr");
+
+            builder.OpenElement(seq++, "td");
+            builder.AddAttribute(seq++, "class", "small");
+            builder.AddContent(seq++, row.DayLabel);
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "td");
+            builder.AddAttribute(seq++, "class", "text-end");
+            builder.AddContent(seq++, row.HitsLabel);
+            builder.CloseElement();
+
+            builder.OpenElement(seq++, "td");
+            builder.AddAttribute(seq++, "class", "text-end");
+            builder.AddContent(seq++, row.PercentLabel);
+            builder.CloseElement();
+
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+
+        builder.CloseElement();
+    };
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private void ToggleSection(string section)
+    {
+        _openSection = _openSection == section ? string.Empty : section;
+    }
+
+    private bool IsSectionOpen(string section) =>
+        string.Equals(_openSection, section, StringComparison.OrdinalIgnoreCase);
+
+    private sealed record PeakHourInfo(string HourLabel, int Hits, string PercentageLabel);
+    private sealed record WeekdayRow(string DayLabel, string HitsLabel, string PercentLabel);
+}

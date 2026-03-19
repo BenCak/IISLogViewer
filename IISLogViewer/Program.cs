@@ -9,12 +9,13 @@ builder.Services.AddScoped<IISLogViewer.Services.SelectionState>();
 
 var logRoot = builder.Configuration["LogViewer:RootDirectory"];
 var timeZoneId = builder.Configuration["LogViewer:TimeZoneId"];
+var userCsvPath = builder.Configuration["LogViewer:UserCsvPath"];
 if (string.IsNullOrWhiteSpace(logRoot))
 {
     logRoot = Path.Combine(Directory.GetCurrentDirectory(), "LogFiles");
 }
 
-builder.Services.AddSingleton(new IISLogViewer.Services.LogParserService(logRoot, timeZoneId));
+builder.Services.AddSingleton(new IISLogViewer.Services.LogParserService(logRoot, timeZoneId, userCsvPath));
 
 var app = builder.Build();
 
