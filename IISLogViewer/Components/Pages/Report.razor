@@ -241,6 +241,103 @@
                                    ReportData="@ReportData"
                                    OnClose="CloseHourlyPopup" />
         }
+        else if (ActiveTab == TabName.Weekdays)
+        {
+            <div class="grid-toolbar">
+                <div><h3>Day Of Week</h3></div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th class="text-end" style="width: 140px;">Hits</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in WeekdayRows)
+                        {
+                            <tr>
+                                <td>
+                                    <button type="button"
+                                            class="btn btn-link btn-sm p-0"
+                                            @onclick="() => OpenWeekdayPopup(r.DayIndex)">
+                                        @r.DayLabel
+                                    </button>
+                                </td>
+                                <td class="text-end">@r.HitsLabel</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <WeekdayDetailPopup IsOpen="@_showWeekdayDetailsPopup"
+                                SelectedWeekday="@_selectedWeekday"
+                                ReportData="@ReportData"
+                                OnClose="CloseWeekdayPopup" />
+        }
+        else if (ActiveTab == TabName.Users)
+        {
+            <div class="grid-toolbar">
+                <div><h3>Users</h3></div>
+                <input class="form-control form-control-sm"
+                       style="max-width: 260px;"
+                       placeholder="Search users"
+                       value="@_searchUsers"
+                       @oninput="@(e => { _searchUsers = e.Value?.ToString() ?? ""; _userPage = 1; })" />
+            </div>
+
+            @if (!FilteredUserRows.Any())
+            {
+                <div class="empty-state">No user data found. Enable cs-username in IIS log fields.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th><button type="button" class="btn btn-link btn-sm p-0" @onclick="() => ToggleUserSort(nameof(UserRow.DisplayName))">Name @SortGlyph(_userSortField, _userSortDesc, nameof(UserRow.DisplayName))</button></th>
+                                <th style="width: 180px;"><button type="button" class="btn btn-link btn-sm p-0" @onclick="() => ToggleUserSort(nameof(UserRow.Department))">Department @SortGlyph(_userSortField, _userSortDesc, nameof(UserRow.Department))</button></th>
+                                <th class="text-end" style="width: 140px;"><button type="button" class="btn btn-link btn-sm p-0" @onclick="() => ToggleUserSort(nameof(UserRow.HitsLabel))">Hits @SortGlyph(_userSortField, _userSortDesc, nameof(UserRow.HitsLabel))</button></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in PagedUsers)
+                            {
+                                <tr>
+                                    <td>
+                                        <button type="button"
+                                                class="btn btn-link btn-sm p-0"
+                                                @onclick="() => OpenUserPopup(r.UserName)">
+                                            @r.DisplayName
+                                        </button>
+                                        @if (!string.IsNullOrWhiteSpace(r.Email))
+                                        {
+                                            <div class="toolbar-subtle">@r.Email</div>
+                                        }
+                                    </td>
+                                    <td>@r.Department</td>
+                                    <td class="text-end">@r.HitsLabel</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <Pager CurrentPage="@_userPage"
+                       TotalPages="@UserPageCount"
+                       OnPageChanged="@(p => _userPage = p)" />
+            }
+
+            <UserHitsDetailPopup IsOpen="@_showUserDetailsPopup"
+                                 SelectedUser="@_selectedUser"
+                                 SelectedUserDisplayName="@_selectedUserDisplayName"
+                                 ReportData="@ReportData"
+                                 OnClose="CloseUserPopup" />
+        }
     </div>
 </div>
 
@@ -312,7 +409,9 @@
         Popups,
         StatusCodes,
         SlowPages,
-        HourlyHits
+        HourlyHits,
+        Weekdays,
+        Users
     }
 
     private static readonly IReadOnlyList<TabName> Tabs = new[]
@@ -324,7 +423,9 @@
         TabName.Popups,
         TabName.StatusCodes,
         TabName.SlowPages,
-        TabName.HourlyHits
+        TabName.HourlyHits,
+        TabName.Weekdays,
+        TabName.Users
     };
 
     private TabName ActiveTab { get; set; } = TabName.Pages;
@@ -341,6 +442,8 @@
             TabName.StatusCodes => ("Status Codes", ReportData?.StatusCodes?.Count ?? 0),
             TabName.SlowPages => ("Slow Pages", ReportData?.SlowPages?.Count ?? 0),
             TabName.HourlyHits => ("Hourly Hits", ReportData?.HourlyHits?.Count ?? 0),
+            TabName.Weekdays => ("Day Of Week", 7),
+            TabName.Users => ("Users", ReportData?.UserHits?.Count ?? 0),
             _ => (tab.ToString(), 0)
         };
 
@@ -356,6 +459,7 @@
     private string _searchStatus = "";
     private string _searchSlow = "";
     private string _searchHours = "";
+    private string _searchUsers = "";
 
     private IEnumerable<LabelValueRow> FilteredPageRows => FilterLabelValueRows(ReportData?.PageHits, _searchPages);
     private IEnumerable<LabelValueRow> FilteredIpRows => FilterLabelValueRows(ReportData?.TopIPs, _searchIPs);
@@ -390,6 +494,12 @@
         .Select(item => new HourRow(item.Key.ToString("D2"), item.Value.ToString("N0")))
         .Where(item => FilterCore(item.HourLabel, _searchHours));
 
+    private IEnumerable<UserRow> FilteredUserRows => (ReportData?.UserHits ?? [])
+        .Select(item => BuildUserRow(item.Key, item.Value))
+        .Where(item => FilterCore($"{item.UserName} {item.DisplayName} {item.Department} {item.Email}", _searchUsers));
+
+    private IEnumerable<WeekdayListRow> WeekdayRows => BuildWeekdayRows();
+
     private bool FilterCore(string search, string searchStr)
     {
         if (string.IsNullOrWhiteSpace(searchStr))
@@ -410,6 +520,8 @@
     private sealed record StatusRow(string StatusLabel, string CountLabel);
     private sealed record SlowPageRow(string Page, string AvgTimeLabel);
     private sealed record HourRow(string HourLabel, string HitsLabel);
+    private sealed record WeekdayListRow(int DayIndex, string DayLabel, string HitsLabel);
+    private sealed record UserRow(string UserName, string DisplayName, string Department, string Email, string HitsLabel);
 
     private const int PageSize = 12;
 
@@ -417,6 +529,7 @@
     private int _statusPage = 1;
     private int _slowPage = 1;
     private int _hourPage = 1;
+    private int _userPage = 1;
 
     private string _docSortField = nameof(DocumentRow.DownloadsLabel);
     private bool _docSortDesc = true;
@@ -430,8 +543,16 @@
     private string _hourSortField = nameof(HourRow.HitsLabel);
     private bool _hourSortDesc = true;
 
+    private string _userSortField = nameof(UserRow.HitsLabel);
+    private bool _userSortDesc = true;
+
     private bool _showHourlyDetailsPopup;
     private int _selectedHour;
+    private bool _showWeekdayDetailsPopup;
+    private int _selectedWeekday;
+    private bool _showUserDetailsPopup;
+    private string _selectedUser = "";
+    private string _selectedUserDisplayName = "";
 
     private static int ParseNumber(string formatted) =>
         int.TryParse(formatted.Replace(",", string.Empty), out var parsed) ? parsed : 0;
@@ -473,6 +594,18 @@
         Func<HourRow, object> keySelector = sortField switch
         {
             nameof(HourRow.HourLabel) => r => ParseNumber(r.HourLabel),
+            _ => r => ParseNumber(r.HitsLabel)
+        };
+        return desc ? rows.OrderByDescending(keySelector) : rows.OrderBy(keySelector);
+    }
+
+    private IEnumerable<UserRow> SortUsers(IEnumerable<UserRow> rows, string sortField, bool desc)
+    {
+        Func<UserRow, object> keySelector = sortField switch
+        {
+            nameof(UserRow.UserName) => r => r.UserName,
+            nameof(UserRow.DisplayName) => r => r.DisplayName,
+            nameof(UserRow.Department) => r => r.Department,
             _ => r => ParseNumber(r.HitsLabel)
         };
         return desc ? rows.OrderByDescending(keySelector) : rows.OrderBy(keySelector);
@@ -529,6 +662,18 @@
 
     private void ToggleHourSort(string field) => ToggleSort(ref _hourSortField, ref _hourSortDesc, field);
 
+    private List<UserRow> SortedUsers =>
+        SortUsers(FilteredUserRows, _userSortField, _userSortDesc).ToList();
+
+    private int UserPageCount => Math.Max(1, (int)Math.Ceiling(SortedUsers.Count / (double)PageSize));
+
+    private IEnumerable<UserRow> PagedUsers =>
+        SortedUsers
+            .Skip((Math.Clamp(_userPage, 1, UserPageCount) - 1) * PageSize)
+            .Take(PageSize);
+
+    private void ToggleUserSort(string field) => ToggleSort(ref _userSortField, ref _userSortDesc, field);
+
     private static void ToggleSort(ref string sortField, ref bool sortDesc, string field)
     {
         if (sortField == field)
@@ -553,5 +698,67 @@
     private void CloseHourlyPopup()
     {
         _showHourlyDetailsPopup = false;
+    }
+
+    private void OpenWeekdayPopup(int dayIndex)
+    {
+        if (dayIndex is < 0 or > 6)
+            return;
+
+        _selectedWeekday = dayIndex;
+        _showWeekdayDetailsPopup = true;
+    }
+
+    private void CloseWeekdayPopup()
+    {
+        _showWeekdayDetailsPopup = false;
+    }
+
+    private void OpenUserPopup(string userName)
+    {
+        if (string.IsNullOrWhiteSpace(userName))
+            return;
+
+        _selectedUser = userName;
+        _selectedUserDisplayName = LogParserService.GetUserDisplayName(userName);
+        _showUserDetailsPopup = true;
+    }
+
+    private void CloseUserPopup()
+    {
+        _showUserDetailsPopup = false;
+    }
+
+    private UserRow BuildUserRow(string userName, int hits)
+    {
+        var profile = LogParserService.GetUserProfile(userName);
+        return new UserRow(
+            userName,
+            profile?.Name ?? userName,
+            string.IsNullOrWhiteSpace(profile?.Department) ? "Unknown" : profile!.Department,
+            profile?.Email ?? "",
+            hits.ToString("N0"));
+    }
+
+    private IEnumerable<WeekdayListRow> BuildWeekdayRows()
+    {
+        var source = ReportData?.WeekdayHits ?? new Dictionary<int, int>();
+        var order = new[]
+        {
+            DayOfWeek.Monday,
+            DayOfWeek.Tuesday,
+            DayOfWeek.Wednesday,
+            DayOfWeek.Thursday,
+            DayOfWeek.Friday,
+            DayOfWeek.Saturday,
+            DayOfWeek.Sunday
+        };
+
+        foreach (var day in order)
+        {
+            var key = (int)day;
+            var hits = source.TryGetValue(key, out var count) ? count : 0;
+            yield return new WeekdayListRow(key, day.ToString(), hits.ToString("N0"));
+        }
     }
 }

@@ -10,7 +10,14 @@
 </div>
 
 
-@if (OverallReport != null)
+@if (IsLoading)
+{
+    <div class="loading-panel" role="status" aria-live="polite" aria-busy="true">
+        <div class="loading-panel__spinner"></div>
+        <div class="loading-panel__text">Loading dashboard...</div>
+    </div>
+}
+else if (OverallReport != null)
 {
     <div class="stats-grid">
         <article class="stat-card">
@@ -40,7 +47,7 @@
 }
 else
 {
-    <div class="loading-state">Loading dashboard...</div>
+    <div class="loading-state">No report data was found.</div>
 }
 
 <style>
@@ -96,6 +103,36 @@ else
         padding: 2rem 0;
         color: var(--shell-subtle);
     }
+
+    .loading-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        min-height: 220px;
+        border: 1px solid var(--shell-border);
+        border-radius: 18px;
+        background: var(--shell-panel);
+    }
+
+    .loading-panel__spinner {
+        width: 2rem;
+        height: 2rem;
+        border: 3px solid var(--shell-border);
+        border-top-color: var(--shell-primary);
+        border-radius: 50%;
+        animation: spin 0.75s linear infinite;
+    }
+
+    .loading-panel__text {
+        color: var(--shell-subtle);
+        font-weight: 600;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
 
 @code {
@@ -106,33 +143,44 @@ else
     private int TotalFiles;
     private int TotalYears;
     private string DateRange = "";
+    private bool IsLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.Run(() =>
+        try
         {
-            var tree = LogParser.GetLogTree();
-            TotalYears = tree.Count;
-            TotalFiles = tree.Values.SelectMany(m => m.Values).SelectMany(d => d).Count();
+            await Task.Run(() =>
+            {
+                var tree = LogParser.GetLogTree();
+                TotalYears = tree.Count;
+                TotalFiles = tree.Values.SelectMany(m => m.Values).SelectMany(d => d).Count();
 
-            var allDates = tree.Values.SelectMany(m => m.Values).SelectMany(d => d).OrderBy(d => d).ToList();
-            if (allDates.Any())
-                DateRange = $"{allDates.First():dd MMM yyyy} — {allDates.Last():dd MMM yyyy}";
-        });
+                var allDates = tree.Values.SelectMany(m => m.Values).SelectMany(d => d).OrderBy(d => d).ToList();
+                if (allDates.Any())
+                    DateRange = $"{allDates.First():dd MMM yyyy} — {allDates.Last():dd MMM yyyy}";
+            });
 
-        // Await the parse call outside the Task.Run so Blazor handles the async context naturally
-        OverallReport = await LogParser.ParseAll();
+            // Await the parse call outside the Task.Run so Blazor handles the async context naturally
+            OverallReport = await LogParser.ParseAll();
 
-        SuccessCount = OverallReport.StatusCodes
-            .Where(s => s.Key >= 200 && s.Key < 400)
-            .Sum(s => s.Value);
+            if (OverallReport != null)
+            {
+                SuccessCount = OverallReport.StatusCodes
+                    .Where(s => s.Key >= 200 && s.Key < 400)
+                    .Sum(s => s.Value);
 
-        ClientErrorCount = OverallReport.StatusCodes
-            .Where(s => s.Key >= 400 && s.Key < 500)
-            .Sum(s => s.Value);
+                ClientErrorCount = OverallReport.StatusCodes
+                    .Where(s => s.Key >= 400 && s.Key < 500)
+                    .Sum(s => s.Value);
 
-        ServerErrorCount = OverallReport.StatusCodes
-            .Where(s => s.Key >= 500)
-            .Sum(s => s.Value);
+                ServerErrorCount = OverallReport.StatusCodes
+                    .Where(s => s.Key >= 500)
+                    .Sum(s => s.Value);
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 }

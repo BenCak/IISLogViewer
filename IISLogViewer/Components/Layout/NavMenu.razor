@@ -78,16 +78,17 @@
                     @foreach (var day in LogTree[year][month].OrderByDescending(d => d))
                     {
                         var dayChecked = SelectedDays.Contains(day);
+                        var isWeekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
 
                         <!-- Day Row -->
-                        <div class="tree-row tree-day @(dayChecked ? "day-selected" : "")">
+                        <div class="tree-row tree-day @(dayChecked ? "day-selected" : "") @(isWeekend ? "tree-day-weekend" : "")">
                             <input class="form-check-input tree-checkbox"
                                    type="checkbox"
                                    checked="@dayChecked"
                                    @onchange="@((ChangeEventArgs e) => ToggleDay(day, e.Value is bool b && b))" />
                             <span class="tree-label tree-label-day">
                                 <span class="tree-icon-day">D</span>
-                                @day.ToString("dd MMM yyyy")
+                                @day.ToString("ddd, dd MMM yyyy")
                             </span>
                         </div>
                     }
@@ -157,6 +158,14 @@
     .tree-year { padding-left: 4px; }
     .tree-month { padding-left: 16px; }
     .tree-day { padding-left: 28px; }
+    .tree-day-weekend {
+        background: color-mix(in srgb, #f59e0b 12%, transparent);
+    }
+
+    .tree-day-weekend .tree-icon-day {
+        background: color-mix(in srgb, #f59e0b 26%, transparent);
+        color: #b45309;
+    }
 
     .tree-label {
         display: flex;
