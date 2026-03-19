@@ -379,6 +379,10 @@ namespace IISLogViewer.Services
                 .ToDictionary(
                     x => x.Key,
                     x => x.Value
+                        .GroupBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                        .Select(g => new KeyValuePair<string, int>(
+                            g.First().Key,
+                            g.Sum(i => i.Value)))
                         .OrderByDescending(i => i.Value)
                         .ThenBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
                         .ToDictionary(i => i.Key, i => i.Value, StringComparer.OrdinalIgnoreCase));
@@ -389,14 +393,77 @@ namespace IISLogViewer.Services
             where TInnerKey : notnull
         {
             return source
+                .GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(g => new KeyValuePair<string, Dictionary<TInnerKey, int>>(
+                    g.First().Key,
+                    g.Select(x => x.Value)
+                        .Aggregate(new Dictionary<TInnerKey, int>(), (acc, map) => MergeInnerMap(acc, map))))
                 .OrderByDescending(x => x.Value.Values.Sum())
                 .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
                     x => x.Key,
-                    x => x.Value
-                        .OrderByDescending(i => i.Value)
-                        .ToDictionary(i => i.Key, i => i.Value),
+                    x => MergeAndSortInnerMap(x.Value),
                     StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static Dictionary<TInnerKey, int> MergeInnerMap<TInnerKey>(
+            Dictionary<TInnerKey, int> target,
+            Dictionary<TInnerKey, int> source)
+            where TInnerKey : notnull
+        {
+            if (typeof(TInnerKey) == typeof(string))
+            {
+                foreach (var item in source)
+                {
+                    var key = (string)(object)item.Key;
+                    var existingPair = target
+                        .FirstOrDefault(k => string.Equals((string)(object)k.Key, key, StringComparison.OrdinalIgnoreCase));
+
+                    if (!EqualityComparer<TInnerKey>.Default.Equals(existingPair.Key, default!))
+                    {
+                        target[existingPair.Key] = existingPair.Value + item.Value;
+                    }
+                    else
+                    {
+                        target[item.Key] = item.Value;
+                    }
+                }
+
+                return target;
+            }
+
+            foreach (var item in source)
+            {
+                if (target.TryGetValue(item.Key, out var existing))
+                    target[item.Key] = existing + item.Value;
+                else
+                    target[item.Key] = item.Value;
+            }
+
+            return target;
+        }
+
+        private static Dictionary<TInnerKey, int> MergeAndSortInnerMap<TInnerKey>(Dictionary<TInnerKey, int> source)
+            where TInnerKey : notnull
+        {
+            if (typeof(TInnerKey) == typeof(string))
+            {
+                var merged = source
+                    .Select(i => new KeyValuePair<string, int>((string)(object)i.Key, i.Value))
+                    .GroupBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => new KeyValuePair<string, int>(g.First().Key, g.Sum(i => i.Value)))
+                    .OrderByDescending(i => i.Value)
+                    .ThenBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(i => i.Key, i => i.Value, StringComparer.OrdinalIgnoreCase);
+
+                return merged.ToDictionary(i => (TInnerKey)(object)i.Key, i => i.Value);
+            }
+
+            return source
+                .GroupBy(i => i.Key)
+                .Select(g => new KeyValuePair<TInnerKey, int>(g.First().Key, g.Sum(i => i.Value)))
+                .OrderByDescending(i => i.Value)
+                .ToDictionary(i => i.Key, i => i.Value);
         }
 
         private static Dictionary<int, Dictionary<TInnerKey, int>> SortNestedIntOuterMap<TInnerKey>(
@@ -407,9 +474,7 @@ namespace IISLogViewer.Services
                 .OrderBy(x => x.Key)
                 .ToDictionary(
                     x => x.Key,
-                    x => x.Value
-                        .OrderByDescending(i => i.Value)
-                        .ToDictionary(i => i.Key, i => i.Value));
+                    x => MergeAndSortInnerMap(x.Value));
         }
 
         private FileParseResult ParseSingleFile(string path)
