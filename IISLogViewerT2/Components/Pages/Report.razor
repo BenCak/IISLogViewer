@@ -17,13 +17,115 @@
     <div class="report-tabs__content" role="tabpanel">
         @if (ActiveTab == TabName.Pages)
         {
-            <LabelValueSection Title="All Pages"
-                               Placeholder="Search pages"
-                               LabelHeader="Page"
-                               ValueHeader="Hits"
-                               SearchValue="@_searchPages"
-                               SearchValueChanged="@(v => _searchPages = v)"
-                               Rows="@FilteredPageRows" />
+            <div class="grid-toolbar">
+                <div>
+                    <h3>Top Pages</h3>
+                    <div class="toolbar-subtle">Includes entry pages and most common next page transitions.</div>
+                </div>
+                <TelerikTextBox Value="@_searchPages"
+                                ValueChanged="@(v => _searchPages = v ?? string.Empty)"
+                                Placeholder="Search pages"
+                                Width="260px"
+                                Size="@ThemeConstants.TextBox.Size.Small"
+                                FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                                DebounceDelay="250"
+                                ShowClearButton="true" />
+            </div>
+
+            <div class="report-note">
+                <strong>Hits:</strong> total requests for the page. |
+                <strong>Entry Hits:</strong> times this page was the first action in a user session window. |
+                <strong>Top Next Page:</strong> the most common page users visited immediately after this page.
+            </div>
+
+            @if (!FilteredTopPageRows.Any())
+            {
+                <div class="empty-state">No page data found.</div>
+            }
+            else
+            {
+                <TelerikGrid Data="@FilteredTopPageRows"
+                             Pageable="true"
+                             @bind-PageSize="_pageSize"
+                             Sortable="false"
+                             Size="@ThemeConstants.Grid.Size.Small">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(TopPageInsightRow.Page)" Title="Page" />
+                        <GridColumn Field="@nameof(TopPageInsightRow.HitsLabel)" Title="Hits" Width="120px">
+                            <Template Context="itemObj">
+                                @{ var row = (TopPageInsightRow)itemObj; }
+                                <div class="text-start">@row.HitsLabel</div>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(TopPageInsightRow.EntryHitsLabel)" Title="Entry Hits" Width="130px">
+                            <Template Context="itemObj">
+                                @{ var row = (TopPageInsightRow)itemObj; }
+                                <div class="text-start">@row.EntryHitsLabel</div>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(TopPageInsightRow.TopNextPage)" Title="Top Next Page" Width="360px">
+                            <Template Context="itemObj">
+                                @{ var row = (TopPageInsightRow)itemObj; }
+                                @if (row.HasFlowDetails)
+                                {
+                                    <a href="#"
+                                       class="next-page-link"
+                                       @onclick:preventDefault="true"
+                                       @onclick="() => OpenNextPageFlowPopup(row.Page)">
+                                        @row.TopNextPage
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@row.TopNextPage</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </TelerikGrid>
+            }
+
+            @if (_showNextPageFlowPopup)
+            {
+                <TelerikWindow Width="880px"
+                               Height="560px"
+                               Visible="@_showNextPageFlowPopup"
+                               Modal="true"
+                               Draggable="true"
+                               Resizable="true"
+                               Class="popup-window popup-window--flow">
+                    <WindowTitle>
+                        Next Page Flow - @_selectedFlowPage
+                    </WindowTitle>
+                    <WindowActions>
+                        <WindowAction Name="Close" />
+                    </WindowActions>
+                    <WindowContent>
+                        @if (!SelectedNextPageFlowRows.Any())
+                        {
+                            <div class="empty-state">No next-page transitions found for this page.</div>
+                        }
+                        else
+                        {
+                            <TelerikGrid Data="@SelectedNextPageFlowRows"
+                                         Pageable="true"
+                                         @bind-PageSize="_pageSize"
+                                         Sortable="false"
+                                         Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(NextPageFlowRow.NextPage)" Title="Next Page" />
+                                    <GridColumn Field="@nameof(NextPageFlowRow.CountLabel)" Title="Transitions" Width="140px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (NextPageFlowRow)itemObj; }
+                                            <div class="text-start">@row.CountLabel</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        }
+                    </WindowContent>
+                </TelerikWindow>
+            }
         }
         else if (ActiveTab == TabName.IPs)
         {
@@ -67,7 +169,7 @@
             {
                 <TelerikGrid Data="@SortedDocuments"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -140,7 +242,7 @@
             {
                 <TelerikGrid Data="@SortedStatuses"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -185,7 +287,7 @@
             {
                 <TelerikGrid Data="@SortedSlowPages"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -233,7 +335,7 @@
             {
                 <TelerikGrid Data="@SortedHours"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -276,7 +378,7 @@
                 <div><h3>Day Of Week</h3></div>
             </div>
 
-            <TelerikGrid Data="@WeekdayRows" Pageable="true" PageSize="7" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+            <TelerikGrid Data="@WeekdayRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(WeekdayListRow.DayLabel)" Title="Day">
                         <Template Context="itemObj">
@@ -325,7 +427,7 @@
             {
                 <TelerikGrid Data="@SortedUsers"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -369,6 +471,7 @@
             <UserHitsDetailPopup IsOpen="@_showUserDetailsPopup"
                                  SelectedUser="@_selectedUser"
                                  SelectedUserDisplayName="@_selectedUserDisplayName"
+                                 SelectedDays="@SelectedDays"
                                  ReportData="@ReportData"
                                  OnClose="CloseUserPopup" />
         }
@@ -425,9 +528,20 @@
         color: var(--kendo-color-subtle, #666);
     }
 
+    .report-note {
+        margin: 0.2rem 0 0.65rem;
+        padding: 0.45rem 0.6rem;
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 4%, #fff);
+        font-size: 0.78rem;
+        color: var(--kendo-color-subtle, #666);
+    }
+
     .weekday-link,
     .hour-link,
-    .user-link {
+    .user-link,
+    .next-page-link {
         color: var(--kendo-color-primary, #0d6efd) !important;
         text-decoration: none;
         cursor: pointer;
@@ -438,14 +552,16 @@
 
     .weekday-link:hover,
     .hour-link:hover,
-    .user-link:hover {
+    .user-link:hover,
+    .next-page-link:hover {
         color: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 85%, #000) !important;
         text-decoration: underline;
     }
 
     .weekday-link:focus-visible,
     .hour-link:focus-visible,
-    .user-link:focus-visible {
+    .user-link:focus-visible,
+    .next-page-link:focus-visible {
         outline: 2px solid color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 45%, transparent);
         outline-offset: 2px;
         border-radius: 4px;
@@ -462,6 +578,9 @@
 @code {
     [Parameter]
     public IISLogViewer.Services.LogReport? ReportData { get; set; }
+
+    [Parameter]
+    public IEnumerable<DateTime>? SelectedDays { get; set; }
 
     private enum TabName
     {
@@ -540,7 +659,10 @@
     private string _searchHours = "";
     private string _searchUsers = "";
 
-    private IEnumerable<LabelValueRow> FilteredPageRows => FilterLabelValueRows(ReportData?.PageHits, _searchPages);
+    private IEnumerable<TopPageInsightRow> FilteredTopPageRows =>
+        BuildTopPageInsights()
+            .Where(row => FilterCore($"{row.Page} {row.TopNextPage}", _searchPages));
+
     private IEnumerable<LabelValueRow> FilteredIpRows => FilterLabelValueRows(ReportData?.TopIPs, _searchIPs);
     private IEnumerable<LabelValueRow> FilteredErrorRows => FilterLabelValueRows(ReportData?.ErrorPages, _searchErrors);
     private IEnumerable<LabelValueRow> FilteredPopupRows => FilterLabelValueRows(ReportData?.PopupHits, _searchPopups);
@@ -617,6 +739,55 @@
             .OrderByDescending(item => item.Value)
             .Select(item => new LabelValueRow(item.Key, item.Value.ToString("N0")));
 
+    private IEnumerable<TopPageInsightRow> BuildTopPageInsights()
+    {
+        var pageHits = ReportData?.PageHits ?? new Dictionary<string, int>();
+        var entryHits = ReportData?.PageEntryHits ?? new Dictionary<string, int>();
+        var transitions = ReportData?.PageNextPageHits ?? new Dictionary<string, Dictionary<string, int>>();
+
+        foreach (var page in pageHits.OrderByDescending(x => x.Value).ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            var entries = entryHits.TryGetValue(page.Key, out var entryCount) ? entryCount : 0;
+
+            var topNext = "-";
+            var hasFlow = false;
+            if (transitions.TryGetValue(page.Key, out var nextMap) && nextMap.Any())
+            {
+                var next = nextMap
+                    .OrderByDescending(x => x.Value)
+                    .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                    .First();
+                topNext = $"{next.Key} ({next.Value:N0})";
+                hasFlow = true;
+            }
+
+            yield return new TopPageInsightRow(
+                page.Key,
+                page.Value.ToString("N0"),
+                entries.ToString("N0"),
+                topNext,
+                hasFlow);
+        }
+    }
+
+    private IEnumerable<NextPageFlowRow> SelectedNextPageFlowRows =>
+        BuildNextPageFlowRows(_selectedFlowPage).Take(5);
+
+    private IEnumerable<NextPageFlowRow> BuildNextPageFlowRows(string page)
+    {
+        if (string.IsNullOrWhiteSpace(page))
+            yield break;
+
+        var transitions = ReportData?.PageNextPageHits ?? new Dictionary<string, Dictionary<string, int>>();
+        if (!transitions.TryGetValue(page, out var nextMap) || !nextMap.Any())
+            yield break;
+
+        foreach (var item in nextMap.OrderByDescending(x => x.Value).ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return new NextPageFlowRow(item.Key, item.Value.ToString("N0"));
+        }
+    }
+
     private static int ParseMetric(string value) =>
         int.TryParse(value.Replace(" ms", string.Empty).Replace(",", string.Empty), out var parsed) ? parsed : 0;
 
@@ -625,9 +796,11 @@
     private sealed record SlowPageRow(string Page, string AvgTimeLabel);
     private sealed record HourRow(string HourLabel, string HitsLabel);
     private sealed record WeekdayListRow(int DayIndex, string DayLabel, string HitsLabel);
+    private sealed record TopPageInsightRow(string Page, string HitsLabel, string EntryHitsLabel, string TopNextPage, bool HasFlowDetails);
+    private sealed record NextPageFlowRow(string NextPage, string CountLabel);
     private sealed record UserRow(string UserName, string DisplayName, string Department, string Email, string HitsLabel);
 
-    private const int PageSize = 12;
+    private int _pageSize = 10;
 
     private string _docSortField = nameof(DocumentRow.DownloadsLabel);
     private bool _docSortDesc = true;
@@ -651,6 +824,8 @@
     private bool _showUserDetailsPopup;
     private string _selectedUser = "";
     private string _selectedUserDisplayName = "";
+    private bool _showNextPageFlowPopup;
+    private string _selectedFlowPage = "";
 
     private static int ParseNumber(string formatted) =>
         int.TryParse(formatted.Replace(",", string.Empty), out var parsed) ? parsed : 0;
@@ -793,11 +968,27 @@
         _showUserDetailsPopup = false;
     }
 
+    private void OpenNextPageFlowPopup(string page)
+    {
+        if (string.IsNullOrWhiteSpace(page))
+            return;
+
+        _selectedFlowPage = page;
+        _showNextPageFlowPopup = true;
+    }
+
+    private void CloseNextPageFlowPopup()
+    {
+        _showNextPageFlowPopup = false;
+        _selectedFlowPage = "";
+    }
+
     private void CloseAllPopups()
     {
         _showHourlyDetailsPopup = false;
         _showWeekdayDetailsPopup = false;
         _showUserDetailsPopup = false;
+        CloseNextPageFlowPopup();
     }
 
     private UserRow BuildUserRow(string userName, int hits)

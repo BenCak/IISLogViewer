@@ -21,9 +21,14 @@
         window.themeSwitcher = {
             setTheme: function (themeHref) {
                 var link = document.getElementById("app-theme");
+                var isBootstrapTheme = !!themeHref && themeHref.indexOf("kendo-theme-bootstrap") !== -1;
                 if (link) {
                     link.href = themeHref;
                     localStorage.setItem("theme", themeHref);
+                }
+
+                if (document && document.body) {
+                    document.body.classList.toggle("theme-bootstrap", isBootstrapTheme);
                 }
             },
             getTheme: function () {

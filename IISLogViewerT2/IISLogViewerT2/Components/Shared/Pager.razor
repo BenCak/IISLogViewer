@@ -1,0 +1,36 @@
+@namespace IISLogViewer.Components.Shared
+
+@if (TotalPages > 1)
+{
+    <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="text-muted">Page @CurrentPage of @TotalPages</small>
+        <div class="d-flex gap-2">
+            <TelerikButton OnClick="() => ChangeTo(CurrentPage - 1)"
+                           Enabled="@(CurrentPage > 1)"
+                           Size="@ThemeConstants.Button.Size.Small"
+                           FillMode="@ThemeConstants.Button.FillMode.Outline">
+                Prev
+            </TelerikButton>
+            <TelerikButton OnClick="() => ChangeTo(CurrentPage + 1)"
+                           Enabled="@(CurrentPage < TotalPages)"
+                           Size="@ThemeConstants.Button.Size.Small"
+                           FillMode="@ThemeConstants.Button.FillMode.Outline">
+                Next
+            </TelerikButton>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public int TotalPages { get; set; } = 1;
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private async Task ChangeTo(int nextPage)
+    {
+        var page = Math.Clamp(nextPage, 1, Math.Max(1, TotalPages));
+        if (page == CurrentPage)
+            return;
+        await OnPageChanged.InvokeAsync(page);
+    }
+}

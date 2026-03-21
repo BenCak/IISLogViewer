@@ -1,0 +1,393 @@
+@rendermode InteractiveServer
+@inject IISLogViewer.Services.LogParserService LogParser
+@inject IISLogViewer.Services.SelectionState SelectionState
+@inject NavigationManager NavigationManager
+
+<div class="nav-tree">
+    <nav class="nav-tree__links">
+        <NavLink href="/" Match="NavLinkMatch.All" class="nav-tree__link">Dashboard</NavLink>
+        <NavLink href="/report" class="nav-tree__link">View Report</NavLink>
+    </nav>
+
+    <div class="nav-tree__section">
+        <div class="nav-tree__caption">Service</div>
+        <div class="folder-picker">
+            <TelerikTextBox Value="@_folderFilter"
+                            ValueChanged="@(value => _folderFilter = value)"
+                            Placeholder="Filter folders"
+                            Width="100%"
+                            ShowClearButton="true"
+                            FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                            Size="@ThemeConstants.TextBox.Size.Small" />
+            <TelerikDropDownList Data="@FilteredFolders"
+                                 Value="@SelectedFolder"
+                                 ValueChanged="@( (string value) => OnFolderChanged(value) )"
+                                 Width="100%"
+                                 Filterable="true"
+                                 FilterOperator="@StringFilterOperator.Contains"
+                                 Size="@ThemeConstants.DropDownList.Size.Small"
+                                 FillMode="@ThemeConstants.DropDownList.FillMode.Outline">
+                <ItemTemplate Context="folder">
+                    @LogParser.GetFolderDisplayName(folder.ToString() ?? string.Empty)
+                </ItemTemplate>
+            </TelerikDropDownList>
+        </div>
+    </div>
+
+    <div class="nav-tree__caption">Log Files</div>
+
+    @foreach (var year in LogTree.Keys.OrderByDescending(y => y))
+    {
+        var yearExpanded = ExpandedYears.Contains(year);
+        var yearChecked = IsYearChecked(year);
+
+        <!-- Year Row -->
+        <div class="tree-row tree-year @(yearExpanded ? "expanded" : "")">
+            <TelerikCheckBox Value="@yearChecked"
+                             ValueChanged="@((bool value) => ToggleYear(year, value))"
+                             Class="tree-checkbox" />
+            <span class="tree-label" @onclick="@(() => ToggleYearExpand(year))">
+                <span class="tree-arrow">@(yearExpanded ? "▾" : "▸")</span>
+                <span class="tree-icon-year">Y</span>
+                <strong>@year</strong>
+                <TelerikChip Size="@ThemeConstants.Chip.Size.Small" Class="tree-badge">
+                    @LogTree[year].Values.SelectMany(d => d).Count()
+                </TelerikChip>
+            </span>
+        </div>
+
+        @if (yearExpanded)
+        {
+            @foreach (var month in LogTree[year].Keys.OrderByDescending(m => m))
+            {
+                var monthKey = $"{year}-{month}";
+                var monthExpanded = ExpandedMonths.Contains(monthKey);
+                var monthChecked = IsMonthChecked(year, month);
+                var dayCount = LogTree[year][month].Count;
+
+                <!-- Month Row -->
+                <div class="tree-row tree-month @(monthExpanded ? "expanded" : "")">
+                    <TelerikCheckBox Value="@monthChecked"
+                                     ValueChanged="@((bool value) => ToggleMonth(year, month, value))"
+                                     Class="tree-checkbox" />
+                    <span class="tree-label" @onclick="@(() => ToggleMonthExpand(year, month))">
+                        <span class="tree-arrow">@(monthExpanded ? "▾" : "▸")</span>
+                        <span class="tree-icon-month">M</span>
+                        @GetMonthName(month)
+                        <span class="day-badge">@dayCount</span>
+                    </span>
+                </div>
+
+                @if (monthExpanded)
+                {
+                    @foreach (var day in LogTree[year][month].OrderByDescending(d => d))
+                    {
+                        var dayChecked = SelectedDays.Contains(day);
+                        var isWeekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                        var holidayIcon = GetHolidayIcon(day);
+
+                        <!-- Day Row -->
+                        <div class="tree-row tree-day @(dayChecked ? "day-selected" : "") @(isWeekend ? "tree-day-weekend" : "")">
+                            <TelerikCheckBox Value="@dayChecked"
+                                             ValueChanged="@((bool value) => ToggleDay(day, value))"
+                                             Class="tree-checkbox" />
+                            <span class="tree-label tree-label-day">
+                                @if (!string.IsNullOrEmpty(holidayIcon))
+                                {
+                                    <span class="tree-icon-day">@holidayIcon</span>
+                                }
+                                else
+                                {
+                                    <span class="tree-icon-day">D</span>
+                                }
+                                @day.ToString("ddd, dd MMM yyyy")
+                            </span>
+                        </div>
+                    }
+                }
+            }
+        }
+    }
+</div>
+
+@if (SelectedDays.Any())
+{
+    <div class="selection-summary">
+        <span class="selection-summary__status"></span>
+        <span><b>@SelectedDays.Count</b> day(s) selected</span>
+        <TelerikButton OnClick="@ClearAll"
+                       Size="@ThemeConstants.Button.Size.Small"
+                       FillMode="@ThemeConstants.Button.FillMode.Flat"
+                       ThemeColor="@ThemeConstants.Button.ThemeColor.Primary">
+            Clear
+        </TelerikButton>
+    </div>
+}
+
+<style>
+    .nav-tree {
+        padding: 0.35rem 0.2rem;
+    }
+
+    .nav-tree__links {
+        display: grid;
+        gap: 0.4rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .nav-tree__link {
+        display: block;
+        padding: 0.55rem 0.7rem;
+        border-radius: 10px;
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        background: var(--kendo-color-surface-alt, #f8f8f8);
+        color: var(--kendo-color-on-surface, inherit);
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.16s ease;
+    }
+
+    .nav-tree__link.active {
+        background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 14%, #fff);
+        border-color: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 40%, var(--kendo-color-border, #d4d4d4));
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 30%, transparent);
+    }
+
+    .nav-tree__section {
+        margin: 0.5rem 0 0.8rem;
+    }
+
+    .nav-tree__caption {
+        margin: 0.55rem 0.4rem 0.35rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--kendo-color-subtle, #666);
+    }
+
+    .tree-row {
+        display: flex;
+        align-items: center;
+        padding: 2px 6px;
+        border-radius: 8px;
+        margin: 2px 4px;
+        transition: background 0.15s, border-color 0.15s;
+        border: 1px solid transparent;
+    }
+    .tree-row:hover {
+        background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 6%, #fff);
+        border-color: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 20%, transparent);
+    }
+
+    .tree-year { padding-left: 4px; }
+    .tree-month { padding-left: 14px; }
+    .tree-day { padding-left: 24px; }
+    .tree-day-weekend {
+        background: color-mix(in srgb, #f59e0b 10%, transparent);
+    }
+
+    .tree-day-weekend .tree-icon-day {
+        background: color-mix(in srgb, #f59e0b 18%, transparent);
+        color: #b45309;
+    }
+
+    .tree-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        flex: 1;
+        font-size: 12.5px;
+        padding: 2px 2px;
+        user-select: none;
+    }
+    .tree-label-day { cursor: default; }
+
+    .tree-arrow { opacity: 0.55; transition: transform 0.2s; width: 0.8rem; }
+    .expanded .tree-arrow { opacity: 0.8; }
+
+    .tree-icon-year,
+    .tree-icon-month,
+    .tree-icon-day {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 0.95rem;
+        height: 0.95rem;
+        border-radius: 999px;
+        font-size: 0.55rem;
+        font-weight: 700;
+    }
+
+    .tree-icon-year { background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 18%, transparent); color: var(--kendo-color-primary, #0d6efd); }
+    .tree-icon-month { background: color-mix(in srgb, var(--kendo-color-info, #3b82f6) 14%, transparent); color: var(--kendo-color-info, #3b82f6); }
+    .tree-icon-day { background: color-mix(in srgb, var(--kendo-color-on-surface, #334155) 10%, transparent); color: var(--kendo-color-subtle, #64748b); }
+
+    .tree-checkbox { margin: 0 !important; padding: 0 !important; }
+
+    .folder-picker {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .tree-badge {
+        font-size: 9.5px !important;
+        height: 18px !important;
+        margin-left: 6px;
+    }
+
+    .day-selected {
+        background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 14%, #fff) !important;
+        border-color: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 28%, transparent);
+    }
+
+    .selection-summary {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.6rem 0.45rem 0.15rem;
+        border-top: 1px solid var(--kendo-color-border, #d4d4d4);
+        margin-top: 0.75rem;
+    }
+
+    .selection-summary__status {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 999px;
+        background: var(--kendo-color-primary, #0d6efd);
+    }
+</style>
+
+@code {
+    private Dictionary<int, Dictionary<int, List<DateTime>>> LogTree = new();
+    private HashSet<DateTime> SelectedDays = new();
+    private HashSet<int> ExpandedYears = new();
+    private HashSet<string> ExpandedMonths = new();
+
+    private List<string> AvailableFolders = new();
+    private string SelectedFolder = "";
+    private string _folderFilter = "";
+
+    private IEnumerable<string> FilteredFolders =>
+        string.IsNullOrWhiteSpace(_folderFilter)
+            ? AvailableFolders
+            : AvailableFolders.Where(f =>
+                LogParser.GetFolderDisplayName(f).Contains(_folderFilter, StringComparison.OrdinalIgnoreCase) ||
+                f.Contains(_folderFilter, StringComparison.OrdinalIgnoreCase));
+
+    protected override void OnInitialized()
+    {
+        AvailableFolders = LogParser.GetAvailableFolders();
+        SelectedFolder = LogParser.CurrentFolder;
+        LogTree = LogParser.GetLogTree();
+    }
+
+    private void OnFolderChanged(string folder)
+    {
+        if (string.IsNullOrWhiteSpace(folder))
+            return;
+
+        SelectedFolder = folder;
+        SelectedDays.Clear();
+        LogParser.SetFolder(folder);
+        LogTree = LogParser.GetLogTree();
+        SelectionState.SelectedDays = new HashSet<DateTime>();
+        SelectionState.CurrentFolder = folder;
+        SelectionState.NotifyFolderChanged();
+        StateHasChanged();
+    }
+
+
+    private string GetMonthName(int month) =>
+        new DateTime(2000, month, 1).ToString("MMMM");
+
+    private static string? GetHolidayIcon(DateTime day)
+    {
+        // Fixed-date holidays
+        if (day.Month == 1 && day.Day == 1) return "🎆";   // New Year's Day
+        if (day.Month == 2 && day.Day == 14) return "💘";  // Valentine's Day
+        if (day.Month == 3 && day.Day == 17) return "☘️";  // St. Patrick's Day
+        if (day.Month == 7 && day.Day == 4) return "🇺🇸";   // Independence Day
+        if (day.Month == 10 && day.Day == 31) return "🎃"; // Halloween
+        if (day.Month == 12 && day.Day == 25) return "🎄"; // Christmas
+
+        // Floating US holidays
+        if (IsMemorialDay(day)) return "🪖";
+        if (IsThanksgiving(day)) return "🦃";
+
+        return null;
+    }
+
+    private static bool IsMemorialDay(DateTime day)
+    {
+        // Last Monday in May
+        return day.Month == 5 && day.DayOfWeek == DayOfWeek.Monday && day.AddDays(7).Month != 5;
+    }
+
+    private static bool IsThanksgiving(DateTime day)
+    {
+        // Fourth Thursday in November
+        return day.Month == 11 && day.DayOfWeek == DayOfWeek.Thursday && day.Day >= 22 && day.Day <= 28;
+    }
+
+    private void ToggleYearExpand(int year)
+    {
+        if (ExpandedYears.Contains(year)) ExpandedYears.Remove(year);
+        else ExpandedYears.Add(year);
+    }
+
+    private void ToggleMonthExpand(int year, int month)
+    {
+        var key = $"{year}-{month}";
+        if (ExpandedMonths.Contains(key)) ExpandedMonths.Remove(key);
+        else ExpandedMonths.Add(key);
+    }
+
+    private bool IsYearChecked(int year) =>
+        LogTree[year].Values.SelectMany(d => d).All(d => SelectedDays.Contains(d));
+
+    private bool IsMonthChecked(int year, int month) =>
+        LogTree[year][month].All(d => SelectedDays.Contains(d));
+
+    private void ToggleYear(int year, bool value)
+    {
+        foreach (var month in LogTree[year].Keys)
+            foreach (var day in LogTree[year][month])
+            {
+                if (value) SelectedDays.Add(day);
+                else SelectedDays.Remove(day);
+            }
+        NotifySelection();
+    }
+
+    private void ToggleMonth(int year, int month, bool value)
+    {
+        foreach (var day in LogTree[year][month])
+        {
+            if (value) SelectedDays.Add(day);
+            else SelectedDays.Remove(day);
+        }
+        NotifySelection();
+    }
+
+    private void ToggleDay(DateTime day, bool value)
+    {
+        if (value) SelectedDays.Add(day);
+        else SelectedDays.Remove(day);
+        NotifySelection();
+    }
+
+    private void ClearAll()
+    {
+        SelectedDays.Clear();
+        NotifySelection();
+    }
+
+    private void NotifySelection()
+    {
+        SelectionState.SelectedDays = new HashSet<DateTime>(SelectedDays);
+        SelectionState.NotifyChanged();
+        NavigationManager.NavigateTo("/report");
+    }
+}
