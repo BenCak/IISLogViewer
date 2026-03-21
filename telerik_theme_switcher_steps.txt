@@ -1,0 +1,110 @@
+STEP 1 — Add theme <link> tag
+
+Open:
+- _Host.cshtml (Blazor Server)
+OR
+- wwwroot/index.html (Blazor WASM / Web App)
+
+Add inside <head>:
+
+<link id="app-theme" rel="stylesheet" href="_content/Telerik.UI.for.Blazor/css/kendo-theme-default/all.css" />
+
+
+STEP 2 — Add JavaScript for switching themes
+
+In the same file (bottom of body), add:
+
+<script>
+    window.themeSwitcher = {
+        setTheme: function (themeHref) {
+            var link = document.getElementById("app-theme");
+            if (link) {
+                link.href = themeHref;
+            }
+        }
+    };
+</script>
+
+
+STEP 3 — Add dropdown in your layout/page
+
+Open:
+MainLayout.razor
+
+Add this:
+
+@inject IJSRuntime JS
+
+<TelerikDropDownList Data="@Themes"
+                     TextField="Text"
+                     ValueField="Value"
+                     Value="@SelectedTheme"
+                     ValueChanged="@OnThemeChanged"
+                     Width="200px" />
+
+@code {
+    public class ThemeOption
+    {
+        public string Text { get; set; }
+        public string Value { get; set; }
+    }
+
+    private string SelectedTheme = "_content/Telerik.UI.for.Blazor/css/kendo-theme-default/all.css";
+
+    private List<ThemeOption> Themes = new()
+    {
+        new ThemeOption { Text = "Default", Value = "_content/Telerik.UI.for.Blazor/css/kendo-theme-default/all.css" },
+        new ThemeOption { Text = "Bootstrap", Value = "_content/Telerik.UI.for.Blazor/css/kendo-theme-bootstrap/all.css" },
+        new ThemeOption { Text = "Material", Value = "_content/Telerik.UI.for.Blazor/css/kendo-theme-material/all.css" }
+    };
+
+    private async Task OnThemeChanged(string value)
+    {
+        SelectedTheme = value;
+        await JS.InvokeVoidAsync("themeSwitcher.setTheme", value);
+    }
+}
+
+
+STEP 4 — Run your app
+
+- Start the app
+- Use dropdown
+- Theme should change instantly
+
+
+STEP 5 (OPTIONAL) — Persist theme after refresh
+
+Update JS:
+
+<script>
+    window.themeSwitcher = {
+        setTheme: function (themeHref) {
+            var link = document.getElementById("app-theme");
+            if (link) {
+                link.href = themeHref;
+                localStorage.setItem("theme", themeHref);
+            }
+        },
+        getTheme: function () {
+            return localStorage.getItem("theme");
+        }
+    };
+</script>
+
+Add in Razor:
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (firstRender)
+    {
+        var theme = await JS.InvokeAsync<string>("themeSwitcher.getTheme");
+
+        if (!string.IsNullOrEmpty(theme))
+        {
+            SelectedTheme = theme;
+            await JS.InvokeVoidAsync("themeSwitcher.setTheme", theme);
+            StateHasChanged();
+        }
+    }
+}
