@@ -1,0 +1,189 @@
+@page "/report"
+@rendermode InteractiveServer
+@inject IISLogViewer.Services.LogParserService LogParser
+@inject IISLogViewer.Services.SelectionState SelectionState
+@implements IDisposable
+
+<div class="page-header">
+    <h5>@ReportTitle</h5>
+</div>
+
+@if (!SelectionState.SelectedDays.Any())
+{
+    <div class="info-banner">
+        Select dates from the tree on the left to generate a report.
+    </div>
+}
+else if (_isLoading)
+{
+    <div class="loading-state">
+        <TelerikLoader Size="@ThemeConstants.Loader.Size.Medium" Type="@LoaderType.InfiniteSpinner" />
+        <span>Loading report for @SelectionState.SelectedDays.Count day(s)...</span>
+    </div>
+}
+else if (CurrentReport == null)
+{
+    <div class="info-banner">
+        No data was returned for the selected dates.
+    </div>
+}
+else
+{
+    <div class="stats-grid">
+        <article class="stat-card">
+            <div class="stat-card__value">@CurrentReport.TotalHits.ToString("N0")</div>
+            <div class="stat-card__label">Total Hits</div>
+        </article>
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--success">@SuccessCount.ToString("N0")</div>
+            <div class="stat-card__label">Successful (2xx/3xx)</div>
+        </article>
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--warning">@ClientErrorCount.ToString("N0")</div>
+            <div class="stat-card__label">Client Errors (4xx)</div>
+        </article>
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--error">@ServerErrorCount.ToString("N0")</div>
+            <div class="stat-card__label">Server Errors (5xx)</div>
+        </article>
+    </div>
+
+    <section class="surface-panel">
+        <Report ReportData="CurrentReport" />
+    </section>
+}
+
+<style>
+    .page-header h1 {
+        margin: 0 0 0.8rem;
+        font-size: 1.45rem;
+        font-weight: 700;
+    }
+
+    .info-banner,
+    .surface-panel,
+    .stat-card {
+        border: 1px solid var(--shell-border, var(--kendo-color-border, #d4d4d4));
+        border-radius: 18px;
+        background: var(--shell-panel, var(--kendo-color-surface, #fff));
+    }
+
+    .info-banner {
+        padding: 1rem 1.1rem;
+        color: var(--shell-subtle);
+    }
+
+    .loading-state {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--kendo-color-subtle, #666);
+        padding: 0.75rem 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.65rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .stat-card {
+        padding: 0.75rem 0.8rem;
+        text-align: center;
+        background: var(--kendo-color-surface, #fff);
+    }
+
+    .stat-card__value {
+        font-size: 1.55rem;
+        font-weight: 700;
+        color: var(--kendo-color-primary, #0d6efd);
+    }
+
+    .stat-card__value--success { color: #28a745; }
+    .stat-card__value--warning { color: #ff9800; }
+    .stat-card__value--error { color: #f44336; }
+
+    .stat-card__label {
+        margin-top: 0.2rem;
+        color: var(--kendo-color-subtle, #666);
+        font-size: 0.92rem;
+    }
+
+    .surface-panel {
+        padding: 0.75rem;
+    }
+
+</style>
+
+@code {
+    private IISLogViewer.Services.LogReport? CurrentReport;
+    private string ReportTitle = "Report";
+    private int SuccessCount;
+    private int ClientErrorCount;
+    private int ServerErrorCount;
+    private bool _isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SelectionState.OnChange += OnSelectionChanged;
+        await LoadReport();
+    }
+
+    private async void OnSelectionChanged()
+    {
+        await LoadReport();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadReport()
+    {
+        _isLoading = true;
+        CurrentReport = null;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            if (!SelectionState.SelectedDays.Any())
+            {
+                ReportTitle = "Report";
+                return;
+            }
+
+            var days = SelectionState.SelectedDays.ToList();
+
+            ReportTitle = days.Count == 1
+                ? $"Report for {days[0]:dddd, dd MMMM yyyy}"
+                : $"Report for {days.Count} selected days ({days.Min():dd MMM yyyy} — {days.Max():dd MMM yyyy})";
+
+            if (days.Count == 1)
+            {
+                CurrentReport = await LogParser.ParseFile(days[0]);
+            }
+            else
+            {
+                CurrentReport = await LogParser.ParseDates(days);
+            }
+
+            if (CurrentReport != null)
+            {
+                SuccessCount = CurrentReport.StatusCodes
+                    .Where(s => s.Key >= 200 && s.Key < 400).Sum(s => s.Value);
+                ClientErrorCount = CurrentReport.StatusCodes
+                    .Where(s => s.Key >= 400 && s.Key < 500).Sum(s => s.Value);
+                ServerErrorCount = CurrentReport.StatusCodes
+                    .Where(s => s.Key >= 500).Sum(s => s.Value);
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        SelectionState.OnChange -= OnSelectionChanged;
+    }
+}

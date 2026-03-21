@@ -1,0 +1,355 @@
+@if (IsOpen)
+{
+    <TelerikWindow Width="980px"
+                   Height="700px"
+                   Visible="@IsOpen"
+                   Modal="true"
+                   Draggable="true"
+                   Resizable="true"
+                   Class="popup-window popup-window--user">
+        <WindowTitle>
+            User Details - @HeaderDisplayName
+        </WindowTitle>
+        <WindowActions>
+            <WindowAction Name="Close" />
+        </WindowActions>
+        <WindowContent>
+            <div class="text-muted small mb-2">@HeaderSubTitle</div>
+
+            @if (PeakHourSummary is not null)
+            {
+                <div class="user-peak-summary">
+                    Most Active Hour: <strong>@PeakHourSummary.HourLabel</strong>
+                    <span class="text-muted">(@PeakHourSummary.Hits.ToString("N0") hits, @PeakHourSummary.PercentageLabel)</span>
+                </div>
+            }
+
+            <TelerikTabStrip Class="popup-tabs">
+                <TabStripTab Title="🔥 Top Pages">
+                    @if (!TopPagesRows.Any())
+                    {
+                        <div class="text-muted small">No page hits for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@TopPagesRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Page" />
+                                    <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (ItemHitRow)itemObj; }
+                                            <div class="text-start">@row.Hits.ToString("N0")</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="📄 Top Documents">
+                    @if (!TopDocumentsRows.Any())
+                    {
+                        <div class="text-muted small">No document hits for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@TopDocumentsRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Document" />
+                                    <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (ItemHitRow)itemObj; }
+                                            <div class="text-start">@row.Hits.ToString("N0")</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="🪟 Top Popups">
+                    @if (!TopPopupsRows.Any())
+                    {
+                        <div class="text-muted small">No popup hits for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@TopPopupsRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Popup" />
+                                    <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (ItemHitRow)itemObj; }
+                                            <div class="text-start">@row.Hits.ToString("N0")</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="📅 Most Active Weekdays">
+                    @if (!WeekdayRows.Any())
+                    {
+                        <div class="text-muted small">No weekday activity for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@WeekdayRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(WeekdayRow.DayLabel)" Title="Day" Width="140px" />
+                                    <GridColumn Field="@nameof(WeekdayRow.HitsLabel)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (WeekdayRow)itemObj; }
+                                            <div class="text-start">@row.HitsLabel</div>
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn Field="@nameof(WeekdayRow.PercentLabel)" Title="Percent" Width="120px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (WeekdayRow)itemObj; }
+                                            <div class="text-start">@row.PercentLabel</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="⏰ Most Active Hours">
+                    @if (!TopHoursRows.Any())
+                    {
+                        <div class="text-muted small">No hourly activity for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@TopHoursRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(HourHitRow.HourLabel)" Title="Hour" />
+                                    <GridColumn Field="@nameof(HourHitRow.Hits)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (HourHitRow)itemObj; }
+                                            <div class="text-start">@row.Hits.ToString("N0")</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="📊 Status Code Breakdown">
+                    @if (!TopStatusRows.Any())
+                    {
+                        <div class="text-muted small">No status code data for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@TopStatusRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Status" />
+                                    <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (ItemHitRow)itemObj; }
+                                            <div class="text-start">@row.Hits.ToString("N0")</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+            </TelerikTabStrip>
+
+        </WindowContent>
+    </TelerikWindow>
+}
+
+<style>
+    .popup-window {
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 22px 50px rgba(0, 0, 0, 0.18);
+    }
+
+    .popup-window :is(.k-window-titlebar, .k-dialog-titlebar) {
+        background: linear-gradient(120deg, var(--kendo-color-primary, #0d6efd), color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 40%, #0b1324));
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .popup-window .k-window-content {
+        background: color-mix(in srgb, var(--kendo-color-surface, #fff) 88%, var(--kendo-color-app-surface, #f5f5f5));
+        padding: 0.35rem;
+    }
+
+    .user-peak-summary {
+        margin-bottom: 0.55rem;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        border-radius: 10px;
+        background: linear-gradient(120deg, color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 10%, #fff), #fff);
+        font-size: 0.9rem;
+    }
+
+    .popup-tabs {
+        margin-top: 0.1rem;
+    }
+
+    .user-section__content {
+        padding: 0.45rem 0.1rem 0.2rem;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public string SelectedUser { get; set; } = "";
+
+    [Parameter]
+    public string SelectedUserDisplayName { get; set; } = "";
+
+    [Parameter]
+    public IISLogViewer.Services.LogReport? ReportData { get; set; }
+
+    [Inject]
+    public IISLogViewer.Services.LogParserService LogParserService { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private const int MaxRows = 12;
+
+    private IISLogViewer.Services.UserProfile? SelectedProfile =>
+        string.IsNullOrWhiteSpace(SelectedUser) ? null : LogParserService.GetUserProfile(SelectedUser);
+
+    private string HeaderDisplayName =>
+        string.IsNullOrWhiteSpace(SelectedUserDisplayName) ? SelectedUser : SelectedUserDisplayName;
+
+    private string HeaderSubTitle
+    {
+        get
+        {
+            var parts = new List<string> { SelectedUser };
+            if (!string.IsNullOrWhiteSpace(SelectedProfile?.Department))
+                parts.Add(SelectedProfile.Department);
+            if (!string.IsNullOrWhiteSpace(SelectedProfile?.Email))
+                parts.Add(SelectedProfile.Email);
+            return string.Join(" | ", parts.Where(x => !string.IsNullOrWhiteSpace(x)));
+        }
+    }
+
+    private List<ItemHitRow> TopPagesRows => MapRows(GetTopByUser(ReportData?.UserPageHits, SelectedUser));
+    private List<ItemHitRow> TopDocumentsRows => MapRows(GetTopByUser(ReportData?.UserDocumentHits, SelectedUser));
+    private List<ItemHitRow> TopPopupsRows => MapRows(GetTopByUser(ReportData?.UserPopupHits, SelectedUser));
+    private List<ItemHitRow> TopStatusRows => GetTopStatusByUser(ReportData?.UserStatusHits, SelectedUser)
+        .Select(item => new ItemHitRow(IISLogViewer.Services.LogParserService.GetStatusDisplay(item.Key), item.Value))
+        .ToList();
+    private List<HourHitRow> TopHoursRows => GetTopHoursByUser(ReportData?.UserHourlyHits, SelectedUser)
+        .Select(item => new HourHitRow($"{item.Key:D2}:00-{item.Key:D2}:59", item.Value))
+        .ToList();
+
+    private PeakHourInfo? PeakHourSummary => BuildPeakHour(TopHoursRows, SelectedUserTotalHits);
+
+    private int SelectedUserTotalHits => ReportData?.UserHits.TryGetValue(SelectedUser, out var hits) == true ? hits : 0;
+
+    private List<WeekdayRow> WeekdayRows => BuildWeekdayRows(ReportData?.UserWeekdayHits, SelectedUser, SelectedUserTotalHits).ToList();
+
+    private static IEnumerable<KeyValuePair<string, int>> GetTopByUser(
+        Dictionary<string, Dictionary<string, int>>? source,
+        string user)
+    {
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<string, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Take(MaxRows);
+    }
+
+    private static IEnumerable<KeyValuePair<int, int>> GetTopStatusByUser(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user)
+    {
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<int, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key)
+            .Take(MaxRows);
+    }
+
+    private static IEnumerable<KeyValuePair<int, int>> GetTopHoursByUser(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user)
+    {
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<int, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key)
+            .Take(MaxRows);
+    }
+
+    private static PeakHourInfo? BuildPeakHour(IEnumerable<HourHitRow> topHours, int totalHits)
+    {
+        if (totalHits <= 0)
+            return null;
+
+        var peak = topHours.FirstOrDefault();
+        if (peak is null || peak.Hits <= 0)
+            return null;
+
+        var percent = (peak.Hits * 100.0) / totalHits;
+        return new PeakHourInfo(peak.HourLabel, peak.Hits, $"{percent:F1}% of user traffic");
+    }
+
+    private static IEnumerable<WeekdayRow> BuildWeekdayRows(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user,
+        int totalHits)
+    {
+        var weekdayOrder = new[]
+        {
+            DayOfWeek.Monday,
+            DayOfWeek.Tuesday,
+            DayOfWeek.Wednesday,
+            DayOfWeek.Thursday,
+            DayOfWeek.Friday,
+            DayOfWeek.Saturday,
+            DayOfWeek.Sunday
+        };
+
+        var bucket = (source != null && !string.IsNullOrWhiteSpace(user) && source.TryGetValue(user, out var found))
+            ? found
+            : new Dictionary<int, int>();
+
+        foreach (var day in weekdayOrder)
+        {
+            var key = (int)day;
+            var hits = bucket.TryGetValue(key, out var value) ? value : 0;
+            var pct = totalHits > 0 ? (hits * 100.0) / totalHits : 0;
+            yield return new WeekdayRow(day.ToString()[..3], hits.ToString("N0"), $"{pct:F1}%");
+        }
+    }
+
+    private static List<ItemHitRow> MapRows(IEnumerable<KeyValuePair<string, int>> source) =>
+        source.Select(x => new ItemHitRow(x.Key, x.Value)).ToList();
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private sealed record ItemHitRow(string Item, int Hits);
+    private sealed record HourHitRow(string HourLabel, int Hits);
+    private sealed record PeakHourInfo(string HourLabel, int Hits, string PercentageLabel);
+    private sealed record WeekdayRow(string DayLabel, string HitsLabel, string PercentLabel);
+}
