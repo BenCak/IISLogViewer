@@ -26,6 +26,8 @@ namespace IISLogViewer.Services
     {
         public int TotalHits { get; set; }
         public Dictionary<string, int> PageHits { get; set; } = new();
+        public Dictionary<string, int> PageEntryHits { get; set; } = new();
+        public Dictionary<string, Dictionary<string, int>> PageNextPageHits { get; set; } = new();
         public Dictionary<string, int> TabHits { get; set; } = new();
         public Dictionary<string, int> ModuleHits { get; set; } = new();
         public Dictionary<string, int> PopupHits { get; set; } = new();
@@ -293,6 +295,8 @@ namespace IISLogViewer.Services
                 report.TotalHits += r.TotalHits;
 
                 MergeDictionary(report.PageHits, r.PageHits);
+                MergeDictionary(report.PageEntryHits, r.PageEntryHits);
+                MergeNestedDictionary(report.PageNextPageHits, r.PageNextPageHits);
                 MergeDictionary(report.TabHits, r.TabHits);
                 MergeDictionary(report.ModuleHits, r.ModuleHits);
                 MergeDictionary(report.PopupHits, r.PopupHits);
@@ -324,6 +328,8 @@ namespace IISLogViewer.Services
 
             // Post-process Sorting and Averages once, after merge
             report.PageHits = report.PageHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.PageEntryHits = report.PageEntryHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.PageNextPageHits = SortNestedMap(report.PageNextPageHits);
             report.TabHits = report.TabHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
             report.ModuleHits = report.ModuleHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
             report.PopupHits = report.PopupHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
@@ -525,6 +531,9 @@ namespace IISLogViewer.Services
             var docTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
             var slowTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
             var fallbackDate = ExtractDateFromFilename(Path.GetFileName(path));
+            var lastPageByUser = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var lastSeenByUser = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+            var sessionWindow = TimeSpan.FromMinutes(30);
 
             try
             {
@@ -704,6 +713,33 @@ namespace IISLogViewer.Services
                             if (!report.PageHits.ContainsKey(pageLabel))
                                 report.PageHits[pageLabel] = 0;
                             report.PageHits[pageLabel]++;
+
+                            // Approximate session boundaries to infer entry pages and transitions.
+                            var hasRecentPrevious = false;
+                            if (TryGetLocalDateTime(fieldMap, fallbackDate, out var pageDateTime) &&
+                                lastSeenByUser.TryGetValue(userName, out var previousSeenAt) &&
+                                pageDateTime >= previousSeenAt &&
+                                pageDateTime - previousSeenAt <= sessionWindow)
+                            {
+                                hasRecentPrevious = lastPageByUser.TryGetValue(userName, out _);
+                            }
+
+                            if (!hasRecentPrevious)
+                            {
+                                if (!report.PageEntryHits.ContainsKey(pageLabel))
+                                    report.PageEntryHits[pageLabel] = 0;
+                                report.PageEntryHits[pageLabel]++;
+                            }
+                            else if (lastPageByUser.TryGetValue(userName, out var previousPage) &&
+                                     !string.IsNullOrWhiteSpace(previousPage) &&
+                                     !string.Equals(previousPage, pageLabel, StringComparison.OrdinalIgnoreCase))
+                            {
+                                IncrementNestedBucket(report.PageNextPageHits, previousPage, pageLabel);
+                            }
+
+                            lastPageByUser[userName] = pageLabel;
+                            if (TryGetLocalDateTime(fieldMap, fallbackDate, out var lastSeenAt))
+                                lastSeenByUser[userName] = lastSeenAt;
 
                             if (hourForBreakdown.HasValue)
                                 IncrementHourlyBucket(report.HourlyPageHits, hourForBreakdown.Value, pageLabel);
