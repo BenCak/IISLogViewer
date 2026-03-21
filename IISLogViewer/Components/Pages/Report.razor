@@ -122,7 +122,7 @@
                     <table class="table table-sm align-middle">
                         <thead>
                             <tr>
-                                <th style="width: 120px;"><button type="button" class="btn btn-link btn-sm p-0" @onclick="() => ToggleStatusSort(nameof(StatusRow.StatusLabel))">Status @SortGlyph(_statusSortField, _statusSortDesc, nameof(StatusRow.StatusLabel))</button></th>
+                                <th style="width: 220px;"><button type="button" class="btn btn-link btn-sm p-0" @onclick="() => ToggleStatusSort(nameof(StatusRow.StatusDisplay))">Status @SortGlyph(_statusSortField, _statusSortDesc, nameof(StatusRow.StatusDisplay))</button></th>
                                 <th class="text-end" style="width: 140px;"><button type="button" class="btn btn-link btn-sm p-0" @onclick="() => ToggleStatusSort(nameof(StatusRow.CountLabel))">Count @SortGlyph(_statusSortField, _statusSortDesc, nameof(StatusRow.CountLabel))</button></th>
                             </tr>
                         </thead>
@@ -130,7 +130,7 @@
                             @foreach (var r in PagedStatuses)
                             {
                                 <tr>
-                                    <td>@r.StatusLabel</td>
+                                    <td>@r.StatusDisplay</td>
                                     <td class="text-end">@r.CountLabel</td>
                                 </tr>
                             }
@@ -481,8 +481,8 @@
 
     private IEnumerable<StatusRow> FilteredStatusRows => (ReportData?.StatusCodes ?? [])
         .OrderByDescending(item => item.Value)
-        .Select(item => new StatusRow(item.Key.ToString(), item.Value.ToString("N0")))
-        .Where(item => FilterCore(item.StatusLabel, _searchStatus));
+        .Select(item => new StatusRow(item.Key, IISLogViewer.Services.LogParserService.GetStatusDisplay(item.Key), item.Value.ToString("N0")))
+        .Where(item => FilterCore(item.StatusDisplay, _searchStatus));
 
     private IEnumerable<SlowPageRow> FilteredSlowPageRows => (ReportData?.SlowPages ?? [])
         .Select(item => new SlowPageRow(item.Key, $"{item.Value:N0} ms"))
@@ -517,7 +517,7 @@
         int.TryParse(value.Replace(" ms", string.Empty).Replace(",", string.Empty), out var parsed) ? parsed : 0;
 
     private sealed record DocumentRow(string File, string TypeLabel, string DownloadsLabel, string AvgTimeLabel);
-    private sealed record StatusRow(string StatusLabel, string CountLabel);
+    private sealed record StatusRow(int StatusCode, string StatusDisplay, string CountLabel);
     private sealed record SlowPageRow(string Page, string AvgTimeLabel);
     private sealed record HourRow(string HourLabel, string HitsLabel);
     private sealed record WeekdayListRow(int DayIndex, string DayLabel, string HitsLabel);
@@ -573,7 +573,7 @@
     {
         Func<StatusRow, object> keySelector = sortField switch
         {
-            nameof(StatusRow.StatusLabel) => r => ParseNumber(r.StatusLabel),
+            nameof(StatusRow.StatusDisplay) => r => r.StatusCode,
             _ => r => ParseNumber(r.CountLabel)
         };
         return desc ? rows.OrderByDescending(keySelector) : rows.OrderBy(keySelector);

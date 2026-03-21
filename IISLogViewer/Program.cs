@@ -15,7 +15,7 @@ if (string.IsNullOrWhiteSpace(logRoot))
     logRoot = Path.Combine(Directory.GetCurrentDirectory(), "LogFiles");
 }
 
-builder.Services.AddSingleton(new IISLogViewer.Services.LogParserService(logRoot, timeZoneId, userCsvPath));
+builder.Services.AddScoped(_ => new IISLogViewer.Services.LogParserService(logRoot, timeZoneId, userCsvPath));
 
 var app = builder.Build();
 

@@ -210,7 +210,9 @@
 
     private IEnumerable<KeyValuePair<string, int>> TopStatusCodes =>
         GetTopStatusByUser(ReportData?.UserStatusHits, SelectedUser)
-            .Select(item => new KeyValuePair<string, int>(item.Key.ToString(), item.Value));
+            .Select(item => new KeyValuePair<string, int>(
+                IISLogViewer.Services.LogParserService.GetStatusDisplay(item.Key),
+                item.Value));
 
     private IEnumerable<KeyValuePair<int, int>> TopHours =>
         GetTopHoursByUser(ReportData?.UserHourlyHits, SelectedUser);
