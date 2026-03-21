@@ -32,6 +32,12 @@
                                 ShowClearButton="true" />
             </div>
 
+            <div class="report-note">
+                <strong>Hits:</strong> total requests for the page. |
+                <strong>Entry Hits:</strong> times this page was the first action in a user session window. |
+                <strong>Top Next Page:</strong> the most common page users visited immediately after this page.
+            </div>
+
             @if (!FilteredTopPageRows.Any())
             {
                 <div class="empty-state">No page data found.</div>
@@ -40,7 +46,7 @@
             {
                 <TelerikGrid Data="@FilteredTopPageRows"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -103,7 +109,7 @@
                         {
                             <TelerikGrid Data="@SelectedNextPageFlowRows"
                                          Pageable="true"
-                                         PageSize="5"
+                                         @bind-PageSize="_pageSize"
                                          Sortable="false"
                                          Size="@ThemeConstants.Grid.Size.Small">
                                 <GridColumns>
@@ -163,7 +169,7 @@
             {
                 <TelerikGrid Data="@SortedDocuments"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -236,7 +242,7 @@
             {
                 <TelerikGrid Data="@SortedStatuses"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -281,7 +287,7 @@
             {
                 <TelerikGrid Data="@SortedSlowPages"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -329,7 +335,7 @@
             {
                 <TelerikGrid Data="@SortedHours"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -372,7 +378,7 @@
                 <div><h3>Day Of Week</h3></div>
             </div>
 
-            <TelerikGrid Data="@WeekdayRows" Pageable="true" PageSize="7" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+            <TelerikGrid Data="@WeekdayRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(WeekdayListRow.DayLabel)" Title="Day">
                         <Template Context="itemObj">
@@ -421,7 +427,7 @@
             {
                 <TelerikGrid Data="@SortedUsers"
                              Pageable="true"
-                             PageSize="@PageSize"
+                             @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
                     <GridColumns>
@@ -465,6 +471,7 @@
             <UserHitsDetailPopup IsOpen="@_showUserDetailsPopup"
                                  SelectedUser="@_selectedUser"
                                  SelectedUserDisplayName="@_selectedUserDisplayName"
+                                 SelectedDays="@SelectedDays"
                                  ReportData="@ReportData"
                                  OnClose="CloseUserPopup" />
         }
@@ -521,6 +528,16 @@
         color: var(--kendo-color-subtle, #666);
     }
 
+    .report-note {
+        margin: 0.2rem 0 0.65rem;
+        padding: 0.45rem 0.6rem;
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 4%, #fff);
+        font-size: 0.78rem;
+        color: var(--kendo-color-subtle, #666);
+    }
+
     .weekday-link,
     .hour-link,
     .user-link,
@@ -561,6 +578,9 @@
 @code {
     [Parameter]
     public IISLogViewer.Services.LogReport? ReportData { get; set; }
+
+    [Parameter]
+    public IEnumerable<DateTime>? SelectedDays { get; set; }
 
     private enum TabName
     {
@@ -780,7 +800,7 @@
     private sealed record NextPageFlowRow(string NextPage, string CountLabel);
     private sealed record UserRow(string UserName, string DisplayName, string Department, string Email, string HitsLabel);
 
-    private const int PageSize = 12;
+    private int _pageSize = 10;
 
     private string _docSortField = nameof(DocumentRow.DownloadsLabel);
     private bool _docSortDesc = true;

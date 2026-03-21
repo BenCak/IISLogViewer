@@ -20,7 +20,7 @@ else
 {
     <TelerikGrid Data="@SortedRows"
                  Pageable="true"
-                 PageSize="12"
+                 @bind-PageSize="_pageSize"
                  Sortable="false"
                  Resizable="true"
                  Size="@ThemeConstants.Grid.Size.Small">
@@ -62,7 +62,7 @@ else
 
     [Parameter] public IEnumerable<LabelValueRow> Rows { get; set; } = Array.Empty<LabelValueRow>();
 
-    private const int PageSize = 12;
+    private int _pageSize = 10;
 
     private string _sortField = nameof(LabelValueRow.ValueLabel);
     private bool _sortDesc = true;
