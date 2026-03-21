@@ -1,0 +1,106 @@
+@namespace IISLogViewer.Components.Shared
+
+<div class="grid-toolbar">
+    <div><h3>@Title</h3></div>
+    <TelerikTextBox Value="@SearchValue"
+                    ValueChanged="OnSearchValueChanged"
+                    Placeholder="@Placeholder"
+                    Width="260px"
+                    Size="@ThemeConstants.TextBox.Size.Small"
+                    FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                    DebounceDelay="250"
+                    ShowClearButton="true" />
+</div>
+
+@if (!Rows.Any())
+{
+    <div class="empty-state">No data found.</div>
+}
+else
+{
+    <TelerikGrid Data="@SortedRows"
+                 Pageable="true"
+                 PageSize="12"
+                 Sortable="false"
+                 Resizable="true"
+                 Size="@ThemeConstants.Grid.Size.Small">
+        <GridColumns>
+            <GridColumn Field="@nameof(LabelValueRow.Label)" Title="@LabelHeader">
+                <HeaderTemplate>
+                    <TelerikButton OnClick="() => ToggleSort(nameof(LabelValueRow.Label))"
+                                   FillMode="@ThemeConstants.Button.FillMode.Flat"
+                                   Size="@ThemeConstants.Button.Size.Small">
+                        @LabelHeader @SortGlyph(nameof(LabelValueRow.Label))
+                    </TelerikButton>
+                </HeaderTemplate>
+            </GridColumn>
+            <GridColumn Field="@nameof(LabelValueRow.ValueLabel)" Title="@ValueHeader" Width="140px">
+                <HeaderTemplate>
+                    <TelerikButton OnClick="() => ToggleSort(nameof(LabelValueRow.ValueLabel))"
+                                   FillMode="@ThemeConstants.Button.FillMode.Flat"
+                                   Size="@ThemeConstants.Button.Size.Small">
+                        @ValueHeader @SortGlyph(nameof(LabelValueRow.ValueLabel))
+                    </TelerikButton>
+                </HeaderTemplate>
+                <Template Context="itemObj">
+                    @{ var row = (LabelValueRow)itemObj; }
+                    <div class="text-start">@row.ValueLabel</div>
+                </Template>
+            </GridColumn>
+        </GridColumns>
+    </TelerikGrid>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Placeholder { get; set; } = "";
+    [Parameter] public string LabelHeader { get; set; } = "Label";
+    [Parameter] public string ValueHeader { get; set; } = "Hits";
+
+    [Parameter] public string SearchValue { get; set; } = "";
+    [Parameter] public EventCallback<string> SearchValueChanged { get; set; }
+
+    [Parameter] public IEnumerable<LabelValueRow> Rows { get; set; } = Array.Empty<LabelValueRow>();
+
+    private const int PageSize = 12;
+
+    private string _sortField = nameof(LabelValueRow.ValueLabel);
+    private bool _sortDesc = true;
+
+    private IEnumerable<LabelValueRow> SortedRows =>
+        Sort(Rows, _sortField, _sortDesc);
+
+    private async Task OnSearchValueChanged(string value)
+    {
+        await SearchValueChanged.InvokeAsync(value ?? "");
+    }
+
+    private void ToggleSort(string field)
+    {
+        if (_sortField == field)
+        {
+            _sortDesc = !_sortDesc;
+            return;
+        }
+
+        _sortField = field;
+        _sortDesc = true;
+    }
+
+    private string SortGlyph(string field) =>
+        _sortField == field ? (_sortDesc ? "▼" : "▲") : "";
+
+    private static IEnumerable<LabelValueRow> Sort(IEnumerable<LabelValueRow> rows, string field, bool desc)
+    {
+        Func<LabelValueRow, object> key = field switch
+        {
+            nameof(LabelValueRow.Label) => r => r.Label,
+            _ => r => ParseNumber(r.ValueLabel)
+        };
+        return desc ? rows.OrderByDescending(key) : rows.OrderBy(key);
+    }
+
+    private static int ParseNumber(string formatted) =>
+        int.TryParse(formatted.Replace(",", string.Empty), out var parsed) ? parsed : 0;
+
+}
