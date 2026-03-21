@@ -1,6 +1,6 @@
 @if (IsOpen)
 {
-    <TelerikWindow Width="980px"
+    <TelerikWindow Width="1320px"
                    Height="700px"
                    Visible="@IsOpen"
                    Modal="true"
@@ -33,7 +33,7 @@
                     else
                     {
                         <div class="user-section__content">
-                            <TelerikGrid Data="@TopPagesRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                            <TelerikGrid Data="@TopPagesRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                 <GridColumns>
                                     <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Page" />
                                     <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
@@ -55,7 +55,7 @@
                     else
                     {
                         <div class="user-section__content">
-                            <TelerikGrid Data="@TopDocumentsRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                            <TelerikGrid Data="@TopDocumentsRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                 <GridColumns>
                                     <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Document" />
                                     <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
@@ -77,7 +77,7 @@
                     else
                     {
                         <div class="user-section__content">
-                            <TelerikGrid Data="@TopPopupsRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                            <TelerikGrid Data="@TopPopupsRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                 <GridColumns>
                                     <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Popup" />
                                     <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
@@ -99,7 +99,7 @@
                     else
                     {
                         <div class="user-section__content">
-                            <TelerikGrid Data="@WeekdayRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                            <TelerikGrid Data="@WeekdayRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                 <GridColumns>
                                     <GridColumn Field="@nameof(WeekdayRow.DayLabel)" Title="Day" Width="140px" />
                                     <GridColumn Field="@nameof(WeekdayRow.HitsLabel)" Title="Hits" Width="110px">
@@ -127,7 +127,7 @@
                     else
                     {
                         <div class="user-section__content">
-                            <TelerikGrid Data="@TopHoursRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                            <TelerikGrid Data="@TopHoursRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                 <GridColumns>
                                     <GridColumn Field="@nameof(HourHitRow.HourLabel)" Title="Hour" />
                                     <GridColumn Field="@nameof(HourHitRow.Hits)" Title="Hits" Width="110px">
@@ -149,7 +149,7 @@
                     else
                     {
                         <div class="user-section__content">
-                            <TelerikGrid Data="@TopStatusRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                            <TelerikGrid Data="@TopStatusRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                 <GridColumns>
                                     <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Status" />
                                     <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
@@ -158,6 +158,45 @@
                                             <div class="text-start">@row.Hits.ToString("N0")</div>
                                         </Template>
                                     </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="🧭 Timeline">
+                    <div class="user-timeline-toolbar">
+                        <TelerikDropDownList Data="@_timelineDateOptions"
+                                             TextField="@nameof(TimelineDateOption.Text)"
+                                             ValueField="@nameof(TimelineDateOption.Value)"
+                                             Value="@_selectedTimelineDateKey"
+                                             ValueChanged="@( (string value) => OnTimelineDateChanged(value) )"
+                                             DefaultText="Select date"
+                                             Width="190px"
+                                             Size="@ThemeConstants.DropDownList.Size.Small"
+                                             FillMode="@ThemeConstants.DropDownList.FillMode.Outline" />
+                    </div>
+
+                    @if (_timelineLoading)
+                    {
+                        <div class="loading-state">
+                            <TelerikLoader Size="@ThemeConstants.Loader.Size.Medium" Type="@LoaderType.InfiniteSpinner" />
+                            <span>Loading timeline...</span>
+                        </div>
+                    }
+                    else if (!_timelineRows.Any())
+                    {
+                        <div class="text-muted small">No timeline events for this user and date.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@_timelineRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(UserTimelineRow.TimeLabel)" Title="Time" Width="120px" />
+                                    <GridColumn Field="@nameof(UserTimelineRow.Action)" Title="Action" />
+                                    <GridColumn Field="@nameof(UserTimelineRow.EventType)" Title="Type" Width="100px" />
+                                    <GridColumn Field="@nameof(UserTimelineRow.StatusLabel)" Title="Status" Width="95px" />
+                                    <GridColumn Field="@nameof(UserTimelineRow.DurationLabel)" Title="Duration" Width="120px" />
                                 </GridColumns>
                             </TelerikGrid>
                         </div>
@@ -201,6 +240,20 @@
         margin-top: 0.1rem;
     }
 
+    .user-timeline-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 0.45rem;
+    }
+
+    .loading-state {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        color: var(--kendo-color-subtle, #666);
+        padding: 0.35rem 0.1rem;
+    }
+
     .user-section__content {
         padding: 0.45rem 0.1rem 0.2rem;
     }
@@ -217,6 +270,9 @@
     public string SelectedUserDisplayName { get; set; } = "";
 
     [Parameter]
+    public IEnumerable<DateTime>? SelectedDays { get; set; }
+
+    [Parameter]
     public IISLogViewer.Services.LogReport? ReportData { get; set; }
 
     [Inject]
@@ -224,6 +280,14 @@
 
     [Parameter]
     public EventCallback OnClose { get; set; }
+
+    private string _timelineUserSeed = "";
+    private string _timelineSelectionSeed = "";
+    private string _selectedTimelineDateKey = "";
+    private List<TimelineDateOption> _timelineDateOptions = new();
+    private List<UserTimelineRow> _timelineRows = new();
+    private bool _timelineLoading;
+    private int _gridPageSize = 10;
 
     private const int MaxRows = 12;
 
@@ -256,11 +320,90 @@
         .Select(item => new HourHitRow($"{item.Key:D2}:00-{item.Key:D2}:59", item.Value))
         .ToList();
 
-    private PeakHourInfo? PeakHourSummary => BuildPeakHour(TopHoursRows, SelectedUserTotalHits);
+    private PeakHourInfo? PeakHourSummary => BuildPeakHour(ReportData?.UserHourlyHits, SelectedUser, SelectedUserTotalHits);
 
     private int SelectedUserTotalHits => ReportData?.UserHits.TryGetValue(SelectedUser, out var hits) == true ? hits : 0;
 
     private List<WeekdayRow> WeekdayRows => BuildWeekdayRows(ReportData?.UserWeekdayHits, SelectedUser, SelectedUserTotalHits).ToList();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var currentSelectionSeed = BuildSelectionSeed(SelectedDays);
+
+        if (!IsOpen || string.IsNullOrWhiteSpace(SelectedUser))
+        {
+            _timelineUserSeed = "";
+            _timelineSelectionSeed = "";
+            _selectedTimelineDateKey = "";
+            _timelineDateOptions = new List<TimelineDateOption>();
+            _timelineRows = new List<UserTimelineRow>();
+            return;
+        }
+
+        if (string.Equals(_timelineUserSeed, SelectedUser, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(_timelineSelectionSeed, currentSelectionSeed, StringComparison.Ordinal) &&
+            _timelineDateOptions.Count > 0)
+            return;
+
+        _timelineUserSeed = SelectedUser;
+        _timelineSelectionSeed = currentSelectionSeed;
+        await RefreshTimelineDatesAsync();
+    }
+
+    private async Task RefreshTimelineDatesAsync()
+    {
+        var dates = await LogParserService.GetTimelineDatesForUser(SelectedUser);
+
+        var selectedDaySet = SelectedDays?
+            .Select(d => d.Date)
+            .ToHashSet() ?? new HashSet<DateTime>();
+
+        if (selectedDaySet.Count > 0)
+            dates = dates.Where(d => selectedDaySet.Contains(d.Date)).ToList();
+
+        _timelineDateOptions = dates
+            .Select(d => new TimelineDateOption(d.ToString("dd MMM yyyy"), d.ToString("yyyy-MM-dd")))
+            .ToList();
+
+        _selectedTimelineDateKey = _timelineDateOptions.FirstOrDefault()?.Value ?? string.Empty;
+        await LoadTimelineAsync();
+    }
+
+    private async Task OnTimelineDateChanged(string value)
+    {
+        _selectedTimelineDateKey = value ?? string.Empty;
+        await LoadTimelineAsync();
+    }
+
+    private async Task LoadTimelineAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedUser) ||
+            string.IsNullOrWhiteSpace(_selectedTimelineDateKey) ||
+            !DateTime.TryParse(_selectedTimelineDateKey, out var selectedDate))
+        {
+            _timelineRows = new List<UserTimelineRow>();
+            return;
+        }
+
+        _timelineLoading = true;
+        try
+        {
+            var events = await LogParserService.ParseTimelineDayForUser(selectedDate.Date, SelectedUser);
+            _timelineRows = events
+                .OrderBy(e => e.TimestampLocal)
+                .Select(e => new UserTimelineRow(
+                    e.TimestampLocal.ToString("HH:mm:ss"),
+                    e.Action,
+                    e.EventType,
+                    e.StatusCode > 0 ? e.StatusCode.ToString() : "-",
+                    e.DurationMs > 0 ? $"{e.DurationMs:N0} ms" : "-"))
+                .ToList();
+        }
+        finally
+        {
+            _timelineLoading = false;
+        }
+    }
 
     private static IEnumerable<KeyValuePair<string, int>> GetTopByUser(
         Dictionary<string, Dictionary<string, int>>? source,
@@ -301,17 +444,27 @@
             .Take(MaxRows);
     }
 
-    private static PeakHourInfo? BuildPeakHour(IEnumerable<HourHitRow> topHours, int totalHits)
+    private static PeakHourInfo? BuildPeakHour(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user,
+        int totalHits)
     {
         if (totalHits <= 0)
             return null;
 
-        var peak = topHours.FirstOrDefault();
-        if (peak is null || peak.Hits <= 0)
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
             return null;
 
-        var percent = (peak.Hits * 100.0) / totalHits;
-        return new PeakHourInfo(peak.HourLabel, peak.Hits, $"{percent:F1}% of user traffic");
+        var peak = bucket
+            .OrderByDescending(x => x.Value)
+            .ThenByDescending(x => x.Key)
+            .First();
+
+        if (peak.Value <= 0)
+            return null;
+
+        var percent = (peak.Value * 100.0) / totalHits;
+        return new PeakHourInfo($"{peak.Key:D2}:00-{peak.Key:D2}:59", peak.Value, $"{percent:F1}% of user traffic");
     }
 
     private static IEnumerable<WeekdayRow> BuildWeekdayRows(
@@ -346,10 +499,24 @@
     private static List<ItemHitRow> MapRows(IEnumerable<KeyValuePair<string, int>> source) =>
         source.Select(x => new ItemHitRow(x.Key, x.Value)).ToList();
 
+    private static string BuildSelectionSeed(IEnumerable<DateTime>? selectedDays)
+    {
+        if (selectedDays == null)
+            return string.Empty;
+
+        return string.Join("|", selectedDays
+            .Select(d => d.Date)
+            .Distinct()
+            .OrderBy(d => d)
+            .Select(d => d.ToString("yyyy-MM-dd")));
+    }
+
     private Task Close() => OnClose.InvokeAsync();
 
     private sealed record ItemHitRow(string Item, int Hits);
     private sealed record HourHitRow(string HourLabel, int Hits);
     private sealed record PeakHourInfo(string HourLabel, int Hits, string PercentageLabel);
     private sealed record WeekdayRow(string DayLabel, string HitsLabel, string PercentLabel);
+    private sealed record TimelineDateOption(string Text, string Value);
+    private sealed record UserTimelineRow(string TimeLabel, string Action, string EventType, string StatusLabel, string DurationLabel);
 }

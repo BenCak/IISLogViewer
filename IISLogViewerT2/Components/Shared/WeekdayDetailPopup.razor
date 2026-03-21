@@ -25,7 +25,7 @@
                             else
                             {
                                 <div class="weekday-section__content">
-                                    <TelerikGrid Data="@TopPagesRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                    <TelerikGrid Data="@TopPagesRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                         <GridColumns>
                                             <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Page" />
                                             <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
@@ -47,7 +47,7 @@
                             else
                             {
                                 <div class="weekday-section__content">
-                                    <TelerikGrid Data="@TopDocumentsRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                    <TelerikGrid Data="@TopDocumentsRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                         <GridColumns>
                                             <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Document" />
                                             <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
@@ -69,7 +69,7 @@
                             else
                             {
                                 <div class="weekday-section__content">
-                                    <TelerikGrid Data="@TopPopupsRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                    <TelerikGrid Data="@TopPopupsRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                         <GridColumns>
                                             <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Popup" />
                                             <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
@@ -91,7 +91,7 @@
                             else
                             {
                                 <div class="weekday-section__content">
-                                    <TelerikGrid Data="@TopUsersRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                    <TelerikGrid Data="@TopUsersRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                         <GridColumns>
                                             <GridColumn Field="@nameof(ItemHitRow.Item)" Title="User" />
                                             <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
@@ -113,7 +113,7 @@
                             else
                             {
                                 <div class="weekday-section__content">
-                                    <TelerikGrid Data="@TopHoursRows" Pageable="true" PageSize="8" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                    <TelerikGrid Data="@TopHoursRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                                         <GridColumns>
                                             <GridColumn Field="@nameof(HourHitRow.HourLabel)" Title="Hour" />
                                             <GridColumn Field="@nameof(HourHitRow.Hits)" Title="Hits" Width="110px">
@@ -162,6 +162,7 @@
 </style>
 
 @code {
+    private int _pageSize = 10;
     [Parameter]
     public bool IsOpen { get; set; }
 
