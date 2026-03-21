@@ -149,9 +149,7 @@
 
             if (!string.IsNullOrWhiteSpace(theme))
             {
-                SelectedTheme = Themes.Any(t => string.Equals(t.Value, theme, StringComparison.OrdinalIgnoreCase))
-                    ? theme
-                    : "_content/Telerik.UI.for.Blazor/css/kendo-theme-default/all.css";
+                SelectedTheme = theme;
                 await InvokeAsync(StateHasChanged);
             }
         }
