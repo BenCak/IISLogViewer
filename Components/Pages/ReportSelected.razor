@@ -49,7 +49,7 @@ else
     </div>
 
     <section class="surface-panel">
-        <Report ReportData="CurrentReport" SelectedDays="SelectionState.SelectedDays" />
+        <Report ReportData="CurrentReport" />
     </section>
 }
 
@@ -89,11 +89,9 @@ else
     }
 
     .stat-card {
-        /* padding: 0.75rem 0.8rem; */
-        border: 1px solid var(--kendo-color-border, #d4d4d4);
-        border-radius: 81px;
-        background: var(--kendo-color-surface, #fff);
+        padding: 0.75rem 0.8rem;
         text-align: center;
+        background: var(--kendo-color-surface, #fff);
     }
 
     .stat-card__value {

@@ -74,6 +74,190 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9fSW1wb3J0cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/App.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvQXBwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Pages/Counter.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvUGFnZXMvQ291bnRlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Pages/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvUGFnZXMvRGFzaGJvYXJkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Pages/Error.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvUGFnZXMvRXJyb3IucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Pages/Report.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvUGFnZXMvUmVwb3J0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Pages/ReportSelected.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvUGFnZXMvUmVwb3J0U2VsZWN0ZWQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Pages/Weather.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvUGFnZXMvV2VhdGhlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvUm91dGVzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Shared/HourlyHitsDetailPopup.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvU2hhcmVkL0hvdXJseUhpdHNEZXRhaWxQb3B1cC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Shared/LabelValueSection.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvU2hhcmVkL0xhYmVsVmFsdWVTZWN0aW9uLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Shared/Pager.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvU2hhcmVkL1BhZ2VyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Shared/UserHitsDetailPopup.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvU2hhcmVkL1VzZXJIaXRzRGV0YWlsUG9wdXAucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Shared/WeekdayDetailPopup.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvU2hhcmVkL1dlZWtkYXlEZXRhaWxQb3B1cC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvX0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/App.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvQXBwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/Pages/Counter.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvUGFnZXMvQ291bnRlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/Pages/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvUGFnZXMvRGFzaGJvYXJkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/Pages/Error.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvUGFnZXMvRXJyb3IucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/Pages/Report.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvUGFnZXMvUmVwb3J0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/Pages/ReportSelected.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvUGFnZXMvUmVwb3J0U2VsZWN0ZWQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/Pages/Weather.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvUGFnZXMvV2VhdGhlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvUm91dGVzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvX0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/App.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL0FwcC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/Pages/Counter.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL1BhZ2VzL0NvdW50ZXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/Pages/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL1BhZ2VzL0Rhc2hib2FyZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/Pages/Error.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL1BhZ2VzL0Vycm9yLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/Pages/Report.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL1BhZ2VzL1JlcG9ydC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/Pages/ReportSelected.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL1BhZ2VzL1JlcG9ydFNlbGVjdGVkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/Pages/Weather.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL1BhZ2VzL1dlYXRoZXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL1JvdXRlcy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL19JbXBvcnRzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/App.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9BcHAucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Pages/Counter.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9QYWdlcy9Db3VudGVyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Pages/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9QYWdlcy9EYXNoYm9hcmQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Pages/Error.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9QYWdlcy9FcnJvci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Pages/Report.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9QYWdlcy9SZXBvcnQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Pages/ReportSelected.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9QYWdlcy9SZXBvcnRTZWxlY3RlZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Pages/Weather.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9QYWdlcy9XZWF0aGVyLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9Sb3V0ZXMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Shared/HourlyHitsDetailPopup.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9TaGFyZWQvSG91cmx5SGl0c0RldGFpbFBvcHVwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Shared/LabelValueSection.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9TaGFyZWQvTGFiZWxWYWx1ZVNlY3Rpb24ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Shared/Pager.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9TaGFyZWQvUGFnZXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Shared/UserHitsDetailPopup.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9TaGFyZWQvVXNlckhpdHNEZXRhaWxQb3B1cC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Shared/WeekdayDetailPopup.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9TaGFyZWQvV2Vla2RheURldGFpbFBvcHVwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9fSW1wb3J0cy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [/home/ben/code/IISLogViewerT2/Components/Layout/MainLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTWFpbkxheW91dC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-l23s3d8f89
@@ -81,3 +265,35 @@ build_metadata.AdditionalFiles.CssScope = b-l23s3d8f89
 [/home/ben/code/IISLogViewerT2/Components/Layout/NavMenu.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTmF2TWVudS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-3zr4zpxbnp
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvTGF5b3V0L01haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-0qzw2zc7et
+
+[/home/ben/code/IISLogViewerT2/IISLogViewer/Components/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyL0NvbXBvbmVudHMvTGF5b3V0L05hdk1lbnUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-kpifgrp4pu
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvTGF5b3V0L01haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-zjky2hytzm
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerMud/Components/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyTXVkL0NvbXBvbmVudHMvTGF5b3V0L05hdk1lbnUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-r7xi1n7rjo
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL0xheW91dC9NYWluTGF5b3V0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-oftuhhbnl5
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT/Components/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVC9Db21wb25lbnRzL0xheW91dC9OYXZNZW51LnJhem9y
+build_metadata.AdditionalFiles.CssScope = b-nk3y499bht
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9MYXlvdXQvTWFpbkxheW91dC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-ci61k9bb4o
+
+[/home/ben/code/IISLogViewerT2/IISLogViewerT2/Components/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = SUlTTG9nVmlld2VyVDIvQ29tcG9uZW50cy9MYXlvdXQvTmF2TWVudS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-mz45a5bqqj

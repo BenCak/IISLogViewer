@@ -26,8 +26,6 @@ namespace IISLogViewer.Services
     {
         public int TotalHits { get; set; }
         public Dictionary<string, int> PageHits { get; set; } = new();
-        public Dictionary<string, int> PageEntryHits { get; set; } = new();
-        public Dictionary<string, Dictionary<string, int>> PageNextPageHits { get; set; } = new();
         public Dictionary<string, int> TabHits { get; set; } = new();
         public Dictionary<string, int> ModuleHits { get; set; } = new();
         public Dictionary<string, int> PopupHits { get; set; } = new();
@@ -54,16 +52,6 @@ namespace IISLogViewer.Services
         public Dictionary<string, Dictionary<int, int>> UserStatusHits { get; set; } = new();
         public Dictionary<string, Dictionary<int, int>> UserHourlyHits { get; set; } = new();
         public Dictionary<string, Dictionary<int, int>> UserWeekdayHits { get; set; } = new();
-    }
-
-    public class TimelineEvent
-    {
-        public DateTime TimestampLocal { get; set; }
-        public string UserName { get; set; } = "Anonymous";
-        public string Action { get; set; } = "";
-        public string EventType { get; set; } = "Page";
-        public int StatusCode { get; set; }
-        public int DurationMs { get; set; }
     }
 
     public class UserProfile
@@ -271,235 +259,10 @@ namespace IISLogViewer.Services
             return await ParseFiles(files);
         }
 
-        public async Task<List<TimelineEvent>> ParseTimelineDay(DateTime date)
-        {
-            var filename = $"u_ex{date:yyMMdd}.log";
-            var files = Directory.GetFiles(_logDirectory, filename, SearchOption.AllDirectories);
-            if (files.Length == 0)
-                return new List<TimelineEvent>();
-
-            var tasks = files.Select(path => Task.Run(() => ParseTimelineSingleFile(path, date.Date)));
-            var chunks = await Task.WhenAll(tasks);
-
-            return chunks
-                .SelectMany(x => x)
-                .OrderBy(x => x.TimestampLocal)
-                .ThenBy(x => x.UserName, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-        }
-
-        public async Task<List<TimelineEvent>> ParseTimelineDayForUser(DateTime date, string userName)
-        {
-            if (string.IsNullOrWhiteSpace(userName))
-                return new List<TimelineEvent>();
-
-            var normalizedUser = NormalizeUserName(userName);
-            var allEvents = await ParseTimelineDay(date);
-
-            return allEvents
-                .Where(e => string.Equals(e.UserName, normalizedUser, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(e => e.TimestampLocal)
-                .ToList();
-        }
-
-        public Task<List<string>> GetTimelineUsers()
-        {
-            var users = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var files = Directory.GetFiles(_logDirectory, "u_ex*.log", SearchOption.AllDirectories);
-
-            foreach (var path in files)
-            {
-                try
-                {
-                    string[] fields = Array.Empty<string>();
-                    using var reader = new StreamReader(path);
-                    string? line;
-
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        if (line.StartsWith("#Fields:"))
-                        {
-                            fields = line.Substring(9).Trim().Split(' ');
-                            continue;
-                        }
-
-                        if (line.StartsWith("#") || string.IsNullOrWhiteSpace(line) || fields.Length == 0)
-                            continue;
-
-                        var parts = line.Split(' ');
-                        if (parts.Length != fields.Length)
-                            continue;
-
-                        var fieldMap = fields.Select((f, i) => new { f, i })
-                                            .ToDictionary(x => x.f, x => parts[x.i]);
-
-                        if (!fieldMap.TryGetValue("cs-username", out var rawUser))
-                            continue;
-
-                        var user = NormalizeUserName(rawUser);
-                        if (!string.IsNullOrWhiteSpace(user) && !string.Equals(user, "Anonymous", StringComparison.OrdinalIgnoreCase))
-                            users.Add(user);
-                    }
-                }
-                catch
-                {
-                    // Ignore malformed files while collecting timeline users.
-                }
-            }
-
-            return Task.FromResult(users.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList());
-        }
-
-        public Task<List<DateTime>> GetTimelineDatesForUser(string userName)
-        {
-            var normalizedUser = NormalizeUserName(userName);
-            var days = new HashSet<DateTime>();
-
-            if (string.IsNullOrWhiteSpace(normalizedUser))
-                return Task.FromResult(days.ToList());
-
-            var files = Directory.GetFiles(_logDirectory, "u_ex*.log", SearchOption.AllDirectories);
-            foreach (var path in files)
-            {
-                var fileDate = ExtractDateFromFilename(Path.GetFileName(path));
-                if (!fileDate.HasValue)
-                    continue;
-
-                try
-                {
-                    string[] fields = Array.Empty<string>();
-                    using var reader = new StreamReader(path);
-                    string? line;
-                    var hasUser = false;
-
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        if (line.StartsWith("#Fields:"))
-                        {
-                            fields = line.Substring(9).Trim().Split(' ');
-                            continue;
-                        }
-
-                        if (line.StartsWith("#") || string.IsNullOrWhiteSpace(line) || fields.Length == 0)
-                            continue;
-
-                        var parts = line.Split(' ');
-                        if (parts.Length != fields.Length)
-                            continue;
-
-                        var fieldMap = fields.Select((f, i) => new { f, i })
-                                            .ToDictionary(x => x.f, x => parts[x.i]);
-
-                        if (!fieldMap.TryGetValue("cs-username", out var rawUser))
-                            continue;
-
-                        if (string.Equals(NormalizeUserName(rawUser), normalizedUser, StringComparison.OrdinalIgnoreCase))
-                        {
-                            hasUser = true;
-                            break;
-                        }
-                    }
-
-                    if (hasUser)
-                        days.Add(fileDate.Value.Date);
-                }
-                catch
-                {
-                    // Ignore malformed files while collecting user-active dates.
-                }
-            }
-
-            return Task.FromResult(days.OrderByDescending(d => d).ToList());
-        }
-
         private class AggregateTracker
         {
             public int Hits { get; set; }
             public long TotalTime { get; set; }
-        }
-
-        private List<TimelineEvent> ParseTimelineSingleFile(string path, DateTime fallbackDate)
-        {
-            var result = new List<TimelineEvent>();
-
-            try
-            {
-                if (!File.Exists(path))
-                    return result;
-
-                string[] fields = Array.Empty<string>();
-                using var reader = new StreamReader(path);
-                string? line;
-
-                while ((line = reader.ReadLine()) != null)
-                {
-                    if (line.StartsWith("#Fields:"))
-                    {
-                        fields = line.Substring(9).Trim().Split(' ');
-                        continue;
-                    }
-
-                    if (line.StartsWith("#") || string.IsNullOrWhiteSpace(line) || fields.Length == 0)
-                        continue;
-
-                    var parts = line.Split(' ');
-                    if (parts.Length != fields.Length)
-                        continue;
-
-                    try
-                    {
-                        var fieldMap = fields.Select((f, i) => new { f, i })
-                                            .ToDictionary(x => x.f, x => parts[x.i]);
-
-                        var uriStem = fieldMap.TryGetValue("cs-uri-stem", out var stem) && stem != "-" ? stem : "";
-                        var uriQuery = fieldMap.TryGetValue("cs-uri-query", out var query) && query != "-" ? query : "";
-                        var userRaw = fieldMap.TryGetValue("cs-username", out var user) ? user : "-";
-                        var userName = NormalizeUserName(userRaw);
-
-                        var statusCode = 0;
-                        if (fieldMap.TryGetValue("sc-status", out var statusStr))
-                            int.TryParse(statusStr, out statusCode);
-
-                        var durationMs = 0;
-                        if (fieldMap.TryGetValue("time-taken", out var timeStr))
-                            int.TryParse(timeStr, out durationMs);
-
-                        if (string.IsNullOrWhiteSpace(uriStem))
-                            continue;
-
-                        var ext = Path.GetExtension(uriStem).ToLowerInvariant();
-                        if (DnnMappings.IgnoredExtensions.Contains(ext))
-                            continue;
-
-                        var eventType = DnnMappings.DocumentExtensions.Contains(ext) ? "Document" : "Page";
-                        if (!string.IsNullOrEmpty(uriQuery) && uriQuery.Contains("PopupControlType=", StringComparison.OrdinalIgnoreCase))
-                            eventType = "Popup";
-
-                        if (!TryGetLocalDateTime(fieldMap, fallbackDate, out var localTimestamp))
-                            continue;
-
-                        result.Add(new TimelineEvent
-                        {
-                            TimestampLocal = localTimestamp,
-                            UserName = userName,
-                            Action = string.IsNullOrEmpty(uriQuery) ? uriStem : $"{uriStem}?{uriQuery}",
-                            EventType = eventType,
-                            StatusCode = statusCode,
-                            DurationMs = durationMs
-                        });
-                    }
-                    catch
-                    {
-                        // Ignore malformed lines; timeline should still load.
-                    }
-                }
-            }
-            catch
-            {
-                // Ignore file-level errors.
-            }
-
-            return result;
         }
 
         private sealed class FileParseResult
@@ -530,8 +293,6 @@ namespace IISLogViewer.Services
                 report.TotalHits += r.TotalHits;
 
                 MergeDictionary(report.PageHits, r.PageHits);
-                MergeDictionary(report.PageEntryHits, r.PageEntryHits);
-                MergeNestedDictionary(report.PageNextPageHits, r.PageNextPageHits);
                 MergeDictionary(report.TabHits, r.TabHits);
                 MergeDictionary(report.ModuleHits, r.ModuleHits);
                 MergeDictionary(report.PopupHits, r.PopupHits);
@@ -563,8 +324,6 @@ namespace IISLogViewer.Services
 
             // Post-process Sorting and Averages once, after merge
             report.PageHits = report.PageHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
-            report.PageEntryHits = report.PageEntryHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
-            report.PageNextPageHits = SortNestedMap(report.PageNextPageHits);
             report.TabHits = report.TabHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
             report.ModuleHits = report.ModuleHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
             report.PopupHits = report.PopupHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
@@ -766,9 +525,6 @@ namespace IISLogViewer.Services
             var docTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
             var slowTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
             var fallbackDate = ExtractDateFromFilename(Path.GetFileName(path));
-            var lastPageByUser = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var lastSeenByUser = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
-            var sessionWindow = TimeSpan.FromMinutes(30);
 
             try
             {
@@ -948,33 +704,6 @@ namespace IISLogViewer.Services
                             if (!report.PageHits.ContainsKey(pageLabel))
                                 report.PageHits[pageLabel] = 0;
                             report.PageHits[pageLabel]++;
-
-                            // Approximate session boundaries to infer entry pages and transitions.
-                            var hasRecentPrevious = false;
-                            if (TryGetLocalDateTime(fieldMap, fallbackDate, out var pageDateTime) &&
-                                lastSeenByUser.TryGetValue(userName, out var previousSeenAt) &&
-                                pageDateTime >= previousSeenAt &&
-                                pageDateTime - previousSeenAt <= sessionWindow)
-                            {
-                                hasRecentPrevious = lastPageByUser.TryGetValue(userName, out _);
-                            }
-
-                            if (!hasRecentPrevious)
-                            {
-                                if (!report.PageEntryHits.ContainsKey(pageLabel))
-                                    report.PageEntryHits[pageLabel] = 0;
-                                report.PageEntryHits[pageLabel]++;
-                            }
-                            else if (lastPageByUser.TryGetValue(userName, out var previousPage) &&
-                                     !string.IsNullOrWhiteSpace(previousPage) &&
-                                     !string.Equals(previousPage, pageLabel, StringComparison.OrdinalIgnoreCase))
-                            {
-                                IncrementNestedBucket(report.PageNextPageHits, previousPage, pageLabel);
-                            }
-
-                            lastPageByUser[userName] = pageLabel;
-                            if (TryGetLocalDateTime(fieldMap, fallbackDate, out var lastSeenAt))
-                                lastSeenByUser[userName] = lastSeenAt;
 
                             if (hourForBreakdown.HasValue)
                                 IncrementHourlyBucket(report.HourlyPageHits, hourForBreakdown.Value, pageLabel);
