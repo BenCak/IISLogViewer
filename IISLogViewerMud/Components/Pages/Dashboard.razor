@@ -1,0 +1,95 @@
+@page "/"
+@rendermode InteractiveServer
+@inject IISLogViewer.Services.LogParserService LogParser
+
+<MudText Typo="Typo.h5" Class="mb-4">Overall Summary : 
+    Total Files: @TotalFiles &nbsp;|&nbsp;
+    Years: @TotalYears &nbsp;|&nbsp;
+    Date Range: @DateRange
+</MudText>
+
+
+@if (OverallReport != null)
+{
+    <MudGrid>
+        <!-- Summary Cards -->
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2" Style="text-align:center">
+                <MudText Typo="Typo.h4" Color="Color.Primary">@OverallReport.TotalHits.ToString("N0")</MudText>
+                <MudText Typo="Typo.body2">Total Hits</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2" Style="text-align:center">
+                <MudText Typo="Typo.h4" Color="Color.Success">@SuccessCount.ToString("N0")</MudText>
+                <MudText Typo="Typo.body2">Successful (2xx/3xx)</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2" Style="text-align:center">
+                <MudText Typo="Typo.h4" Color="Color.Warning">@ClientErrorCount.ToString("N0")</MudText>
+                <MudText Typo="Typo.body2">Client Errors (4xx)</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4" Elevation="2" Style="text-align:center">
+                <MudText Typo="Typo.h4" Color="Color.Error">@ServerErrorCount.ToString("N0")</MudText>
+                <MudText Typo="Typo.body2">Server Errors (5xx)</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Tabbed Data Sections -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2">
+                <Report ReportData="OverallReport" />
+            </MudPaper>
+        </MudItem>
+
+    </MudGrid>
+}
+else
+{
+    <MudText>Loading dashboard...</MudText>
+}
+
+@code {
+    private IISLogViewer.Services.LogReport? OverallReport;
+    private int SuccessCount;
+    private int ClientErrorCount;
+    private int ServerErrorCount;
+    private int TotalFiles;
+    private int TotalYears;
+    private string DateRange = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Run(() =>
+        {
+            var tree = LogParser.GetLogTree();
+            TotalYears = tree.Count;
+            TotalFiles = tree.Values.SelectMany(m => m.Values).SelectMany(d => d).Count();
+
+            var allDates = tree.Values.SelectMany(m => m.Values).SelectMany(d => d).OrderBy(d => d).ToList();
+            if (allDates.Any())
+                DateRange = $"{allDates.First():dd MMM yyyy} — {allDates.Last():dd MMM yyyy}";
+        });
+
+        // Await the parse call outside the Task.Run so Blazor handles the async context naturally
+        OverallReport = await LogParser.ParseAll();
+
+        SuccessCount = OverallReport.StatusCodes
+            .Where(s => s.Key >= 200 && s.Key < 400)
+            .Sum(s => s.Value);
+
+        ClientErrorCount = OverallReport.StatusCodes
+            .Where(s => s.Key >= 400 && s.Key < 500)
+            .Sum(s => s.Value);
+
+        ServerErrorCount = OverallReport.StatusCodes
+            .Where(s => s.Key >= 500)
+            .Sum(s => s.Value);
+    }
+}
