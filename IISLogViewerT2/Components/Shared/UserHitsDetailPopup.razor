@@ -567,21 +567,34 @@
 
     private static string FormatPageAction(string action, string tabName, string moduleName)
     {
-        // Extract just the stem from the action (e.g., /Default.aspx from /Default.aspx?TabID=51&ModuleID=273)
-        var stem = action.Split('?')[0];
+        // Split stem and query string
+        var parts = action.Split('?');
+        var stem = parts[0];
+        var queryString = parts.Length > 1 ? parts[1] : "";
 
-        var parts = new List<string>();
+        // Filter out TabID and ModuleID from query string
+        var filteredParams = string.IsNullOrWhiteSpace(queryString)
+            ? string.Empty
+            : string.Join("&", queryString
+                .Split('&')
+                .Where(p => !p.StartsWith("TabID=", StringComparison.OrdinalIgnoreCase) &&
+                           !p.StartsWith("ModuleID=", StringComparison.OrdinalIgnoreCase)));
 
+        // Build page reference with optional query string
+        var pageRef = string.IsNullOrWhiteSpace(filteredParams)
+            ? stem
+            : $"{stem}?{filteredParams}";
+
+        // Add Tab/Module context
+        var contextParts = new List<string>();
         if (!string.IsNullOrWhiteSpace(tabName) && tabName != "-")
-            parts.Add(tabName);
-
+            contextParts.Add(tabName);
         if (!string.IsNullOrWhiteSpace(moduleName) && moduleName != "-")
-            parts.Add(moduleName);
+            contextParts.Add(moduleName);
 
-        if (parts.Count == 0)
-            return stem;  // Just the stem if no tab/module info
-
-        return $"{stem} ({string.Join(", ", parts)})";
+        return contextParts.Count == 0
+            ? pageRef
+            : $"{pageRef} ({string.Join(", ", contextParts)})";
     }
 
     private sealed class CombinedTimelineRow
