@@ -1,0 +1,4656 @@
+IISLogViewer Source Code Bundle
+Generated: 2026-03-23 09:22:12
+File count: 21
+
+============================================================
+FILE: Components/App.razor
+============================================================
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="IISLogViewer.styles.css" />
+    <link id="app-theme" rel="stylesheet" href="_content/Telerik.UI.for.Blazor/css/kendo-theme-default/all.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes @rendermode="InteractiveServer" />
+    <script src="_framework/blazor.web.js"></script>
+    <script src="_content/Telerik.UI.for.Blazor/js/telerik-blazor.js"></script>
+    <script>
+        window.themeSwitcher = {
+            setTheme: function (themeHref) {
+                var link = document.getElementById("app-theme");
+                var isBootstrapTheme = !!themeHref && themeHref.indexOf("kendo-theme-bootstrap") !== -1;
+                if (link) {
+                    link.href = themeHref;
+                    localStorage.setItem("theme", themeHref);
+                }
+
+                if (document && document.body) {
+                    document.body.classList.toggle("theme-bootstrap", isBootstrapTheme);
+                }
+            },
+            getTheme: function () {
+                return localStorage.getItem("theme");
+            }
+        };
+    </script>
+</body>
+
+</html>
+
+============================================================
+FILE: Components/_Imports.razor
+============================================================
+@using System.Net.Http
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.JSInterop
+@using IISLogViewer
+@using IISLogViewer.Components
+@using IISLogViewer.Components.Shared
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+
+============================================================
+FILE: Components/Layout/MainLayout.razor
+============================================================
+@inherits LayoutComponentBase
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<TelerikRootComponent>
+    <div class="app-shell">
+        <header class="app-shell__header">
+            <div>
+                <div class="app-shell__title">IIS Log Viewer</div>
+                <div class="app-shell__subtitle">W3SVC2 analytics workspace</div>
+            </div>
+
+            <div class="app-shell__theme-picker">
+                <label class="app-shell__label" for="theme-selector">Theme</label>
+                <TelerikDropDownList Id="theme-selector"
+                                     Data="@Themes"
+                                     TextField="@nameof(ThemeOption.Text)"
+                                     ValueField="@nameof(ThemeOption.Value)"
+                                     Value="@SelectedTheme"
+                                     ValueChanged="@( (string value) => OnThemeChanged(value) )"
+                                     Width="200px"
+                                     Size="@ThemeConstants.DropDownList.Size.Small"
+                                     FillMode="@ThemeConstants.DropDownList.FillMode.Outline" />
+            </div>
+        </header>
+
+        <div class="app-shell__body">
+            <aside class="app-shell__sidebar">
+                <div class="app-shell__sidebar-title">Log Files</div>
+                <NavMenu />
+            </aside>
+
+            <main class="app-shell__content">
+                @Body
+            </main>
+        </div>
+    </div>
+</TelerikRootComponent>
+
+<style>
+    .app-shell {
+        min-height: 100vh;
+        background-color: var(--kendo-color-app-surface, #f5f5f5);
+        color: var(--kendo-color-on-app-surface, inherit);
+    }
+
+    .app-shell__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 1rem;
+        padding: 0.75rem 1rem 0.55rem;
+        border-bottom: 1px solid var(--kendo-color-border, #d4d4d4);
+        background-color: var(--kendo-color-surface, #ffffff);
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+
+    .app-shell__title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .app-shell__subtitle,
+    .app-shell__label {
+        color: var(--kendo-color-on-surface, inherit);
+        font-size: 0.72rem;
+        line-height: 1.2;
+    }
+
+    .app-shell__theme-picker {
+        min-width: 220px;
+    }
+
+    .app-shell__body {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 0.9rem;
+        padding: 0.8rem;
+    }
+
+    .app-shell__sidebar,
+    .app-shell__content {
+        background: var(--kendo-color-surface, #ffffff);
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        border-radius: 12px;
+    }
+
+    .app-shell__sidebar {
+        padding: 1rem 0.75rem;
+        position: sticky;
+        top: 6.25rem;
+        max-height: calc(100vh - 7.5rem);
+        overflow: auto;
+    }
+
+    .app-shell__sidebar-title {
+        padding: 0 0.5rem 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--kendo-color-subtle, #666);
+    }
+
+    .app-shell__content { padding: 0.85rem; }
+
+    @@media (max-width: 960px) {
+        .app-shell__body {
+            grid-template-columns: 1fr;
+        }
+
+        .app-shell__sidebar {
+            position: static;
+            max-height: none;
+        }
+
+        .app-shell__header {
+            align-items: start;
+            flex-direction: column;
+        }
+    }
+</style>
+
+@code {
+    public class ThemeOption
+    {
+        public string Text { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+    }
+
+    private string SelectedTheme = "_content/Telerik.UI.for.Blazor/css/kendo-theme-default/all.css";
+
+    private readonly List<ThemeOption> Themes = new()
+    {
+        new ThemeOption { Text = "Default", Value = "_content/Telerik.UI.for.Blazor/css/kendo-theme-default/all.css" },
+        new ThemeOption { Text = "Bootstrap", Value = "_content/Telerik.UI.for.Blazor/css/kendo-theme-bootstrap/all.css" },
+        new ThemeOption { Text = "Material", Value = "_content/Telerik.UI.for.Blazor/css/kendo-theme-material/all.css" },
+        new ThemeOption { Text = "Fluent", Value = "_content/Telerik.UI.for.Blazor/css/kendo-theme-fluent/all.css" }
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var theme = await JS.InvokeAsync<string>("themeSwitcher.getTheme");
+
+            if (!string.IsNullOrWhiteSpace(theme))
+            {
+                SelectedTheme = Themes.Any(t => string.Equals(t.Value, theme, StringComparison.OrdinalIgnoreCase))
+                    ? theme
+                    : "_content/Telerik.UI.for.Blazor/css/kendo-theme-default/all.css";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        // Re-apply the currently selected theme after renders so tab switches
+        // or component refreshes cannot visually reset the active stylesheet.
+        await JS.InvokeVoidAsync("themeSwitcher.setTheme", SelectedTheme);
+    }
+
+    private async Task OnThemeChanged(string value)
+    {
+        SelectedTheme = string.IsNullOrWhiteSpace(value)
+            ? "_content/Telerik.UI.for.Blazor/css/kendo-theme-default/all.css"
+            : value;
+
+        await JS.InvokeVoidAsync("themeSwitcher.setTheme", SelectedTheme);
+    }
+}
+
+============================================================
+FILE: Components/Layout/NavMenu.razor
+============================================================
+@rendermode InteractiveServer
+@inject IISLogViewer.Services.LogParserService LogParser
+@inject IISLogViewer.Services.SelectionState SelectionState
+@inject NavigationManager NavigationManager
+
+<div class="nav-tree">
+    <nav class="nav-tree__links">
+        <NavLink href="/" Match="NavLinkMatch.All" class="nav-tree__link">Dashboard</NavLink>
+        <NavLink href="/report" class="nav-tree__link">View Report</NavLink>
+    </nav>
+
+    <div class="nav-tree__section">
+        <div class="nav-tree__caption">Service</div>
+        <div class="folder-picker">
+            <TelerikTextBox Value="@_folderFilter"
+                            ValueChanged="@(value => _folderFilter = value)"
+                            Placeholder="Filter folders"
+                            Width="100%"
+                            ShowClearButton="true"
+                            FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                            Size="@ThemeConstants.TextBox.Size.Small" />
+            <TelerikDropDownList Data="@FilteredFolders"
+                                 Value="@SelectedFolder"
+                                 ValueChanged="@( (string value) => OnFolderChanged(value) )"
+                                 Width="100%"
+                                 Filterable="true"
+                                 FilterOperator="@StringFilterOperator.Contains"
+                                 Size="@ThemeConstants.DropDownList.Size.Small"
+                                 FillMode="@ThemeConstants.DropDownList.FillMode.Outline">
+                <ItemTemplate Context="folder">
+                    @LogParser.GetFolderDisplayName(folder.ToString() ?? string.Empty)
+                </ItemTemplate>
+            </TelerikDropDownList>
+        </div>
+    </div>
+
+    <div class="nav-tree__caption">Log Files</div>
+
+    @foreach (var year in LogTree.Keys.OrderByDescending(y => y))
+    {
+        var yearExpanded = ExpandedYears.Contains(year);
+        var yearChecked = IsYearChecked(year);
+
+        <!-- Year Row -->
+        <div class="tree-row tree-year @(yearExpanded ? "expanded" : "")">
+            <TelerikCheckBox Value="@yearChecked"
+                             ValueChanged="@((bool value) => ToggleYear(year, value))"
+                             Class="tree-checkbox" />
+            <span class="tree-label" @onclick="@(() => ToggleYearExpand(year))">
+                <span class="tree-arrow">@(yearExpanded ? "▾" : "▸")</span>
+                <span class="tree-icon-year">Y</span>
+                <strong>@year</strong>
+                <TelerikChip Size="@ThemeConstants.Chip.Size.Small" Class="tree-badge">
+                    @LogTree[year].Values.SelectMany(d => d).Count()
+                </TelerikChip>
+            </span>
+        </div>
+
+        @if (yearExpanded)
+        {
+            @foreach (var month in LogTree[year].Keys.OrderByDescending(m => m))
+            {
+                var monthKey = $"{year}-{month}";
+                var monthExpanded = ExpandedMonths.Contains(monthKey);
+                var monthChecked = IsMonthChecked(year, month);
+                var dayCount = LogTree[year][month].Count;
+
+                <!-- Month Row -->
+                <div class="tree-row tree-month @(monthExpanded ? "expanded" : "")">
+                    <TelerikCheckBox Value="@monthChecked"
+                                     ValueChanged="@((bool value) => ToggleMonth(year, month, value))"
+                                     Class="tree-checkbox" />
+                    <span class="tree-label" @onclick="@(() => ToggleMonthExpand(year, month))">
+                        <span class="tree-arrow">@(monthExpanded ? "▾" : "▸")</span>
+                        <span class="tree-icon-month">M</span>
+                        @GetMonthName(month)
+                        <span class="day-badge">@dayCount</span>
+                    </span>
+                </div>
+
+                @if (monthExpanded)
+                {
+                    @foreach (var day in LogTree[year][month].OrderByDescending(d => d))
+                    {
+                        var dayChecked = SelectedDays.Contains(day);
+                        var isWeekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                        var holidayIcon = GetHolidayIcon(day);
+
+                        <!-- Day Row -->
+                        <div class="tree-row tree-day @(dayChecked ? "day-selected" : "") @(isWeekend ? "tree-day-weekend" : "")">
+                            <TelerikCheckBox Value="@dayChecked"
+                                             ValueChanged="@((bool value) => ToggleDay(day, value))"
+                                             Class="tree-checkbox" />
+                            <span class="tree-label tree-label-day">
+                                @if (!string.IsNullOrEmpty(holidayIcon))
+                                {
+                                    <span class="tree-icon-day">@holidayIcon</span>
+                                }
+                                else
+                                {
+                                    <span class="tree-icon-day">D</span>
+                                }
+                                @day.ToString("ddd, dd MMM yyyy")
+                            </span>
+                        </div>
+                    }
+                }
+            }
+        }
+    }
+</div>
+
+@if (SelectedDays.Any())
+{
+    <div class="selection-summary">
+        <span class="selection-summary__status"></span>
+        <span><b>@SelectedDays.Count</b> day(s) selected</span>
+        <TelerikButton OnClick="@ClearAll"
+                       Size="@ThemeConstants.Button.Size.Small"
+                       FillMode="@ThemeConstants.Button.FillMode.Flat"
+                       ThemeColor="@ThemeConstants.Button.ThemeColor.Primary">
+            Clear
+        </TelerikButton>
+    </div>
+}
+
+<style>
+    .nav-tree {
+        padding: 0.35rem 0.2rem;
+    }
+
+    .nav-tree__links {
+        display: grid;
+        gap: 0.4rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .nav-tree__link {
+        display: block;
+        padding: 0.55rem 0.7rem;
+        border-radius: 10px;
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        background: var(--kendo-color-surface-alt, #f8f8f8);
+        color: var(--kendo-color-on-surface, inherit);
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.16s ease;
+    }
+
+    .nav-tree__link.active {
+        background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 14%, #fff);
+        border-color: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 40%, var(--kendo-color-border, #d4d4d4));
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 30%, transparent);
+    }
+
+    .nav-tree__section {
+        margin: 0.5rem 0 0.8rem;
+    }
+
+    .nav-tree__caption {
+        margin: 0.55rem 0.4rem 0.35rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--kendo-color-subtle, #666);
+    }
+
+    .tree-row {
+        display: flex;
+        align-items: center;
+        padding: 2px 6px;
+        border-radius: 8px;
+        margin: 2px 4px;
+        transition: background 0.15s, border-color 0.15s;
+        border: 1px solid transparent;
+    }
+    .tree-row:hover {
+        background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 6%, #fff);
+        border-color: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 20%, transparent);
+    }
+
+    .tree-year { padding-left: 4px; }
+    .tree-month { padding-left: 14px; }
+    .tree-day { padding-left: 24px; }
+    .tree-day-weekend {
+        background: color-mix(in srgb, #f59e0b 10%, transparent);
+    }
+
+    .tree-day-weekend .tree-icon-day {
+        background: color-mix(in srgb, #f59e0b 18%, transparent);
+        color: #b45309;
+    }
+
+    .tree-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        flex: 1;
+        font-size: 12.5px;
+        padding: 2px 2px;
+        user-select: none;
+    }
+    .tree-label-day { cursor: default; }
+
+    .tree-arrow { opacity: 0.55; transition: transform 0.2s; width: 0.8rem; }
+    .expanded .tree-arrow { opacity: 0.8; }
+
+    .tree-icon-year,
+    .tree-icon-month,
+    .tree-icon-day {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 0.95rem;
+        height: 0.95rem;
+        border-radius: 999px;
+        font-size: 0.55rem;
+        font-weight: 700;
+    }
+
+    .tree-icon-year { background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 18%, transparent); color: var(--kendo-color-primary, #0d6efd); }
+    .tree-icon-month { background: color-mix(in srgb, var(--kendo-color-info, #3b82f6) 14%, transparent); color: var(--kendo-color-info, #3b82f6); }
+    .tree-icon-day { background: color-mix(in srgb, var(--kendo-color-on-surface, #334155) 10%, transparent); color: var(--kendo-color-subtle, #64748b); }
+
+    .tree-checkbox { margin: 0 !important; padding: 0 !important; }
+
+    .folder-picker {
+        display: grid;
+        gap: 0.5rem;
+    }
+
+    .tree-badge {
+        font-size: 9.5px !important;
+        height: 18px !important;
+        margin-left: 6px;
+    }
+
+    .day-selected {
+        background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 14%, #fff) !important;
+        border-color: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 28%, transparent);
+    }
+
+    .selection-summary {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.6rem 0.45rem 0.15rem;
+        border-top: 1px solid var(--kendo-color-border, #d4d4d4);
+        margin-top: 0.75rem;
+    }
+
+    .selection-summary__status {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 999px;
+        background: var(--kendo-color-primary, #0d6efd);
+    }
+</style>
+
+@code {
+    private Dictionary<int, Dictionary<int, List<DateTime>>> LogTree = new();
+    private HashSet<DateTime> SelectedDays = new();
+    private HashSet<int> ExpandedYears = new();
+    private HashSet<string> ExpandedMonths = new();
+
+    private List<string> AvailableFolders = new();
+    private string SelectedFolder = "";
+    private string _folderFilter = "";
+
+    private IEnumerable<string> FilteredFolders =>
+        string.IsNullOrWhiteSpace(_folderFilter)
+            ? AvailableFolders
+            : AvailableFolders.Where(f =>
+                LogParser.GetFolderDisplayName(f).Contains(_folderFilter, StringComparison.OrdinalIgnoreCase) ||
+                f.Contains(_folderFilter, StringComparison.OrdinalIgnoreCase));
+
+    protected override void OnInitialized()
+    {
+        AvailableFolders = LogParser.GetAvailableFolders();
+        SelectedFolder = LogParser.CurrentFolder;
+        LogTree = LogParser.GetLogTree();
+    }
+
+    private void OnFolderChanged(string folder)
+    {
+        if (string.IsNullOrWhiteSpace(folder))
+            return;
+
+        SelectedFolder = folder;
+        SelectedDays.Clear();
+        LogParser.SetFolder(folder);
+        LogTree = LogParser.GetLogTree();
+        SelectionState.SelectedDays = new HashSet<DateTime>();
+        SelectionState.CurrentFolder = folder;
+        SelectionState.NotifyFolderChanged();
+        StateHasChanged();
+    }
+
+
+    private string GetMonthName(int month) =>
+        new DateTime(2000, month, 1).ToString("MMMM");
+
+    private static string? GetHolidayIcon(DateTime day)
+    {
+        // Fixed-date holidays
+        if (day.Month == 1 && day.Day == 1) return "🎆";   // New Year's Day
+        if (day.Month == 2 && day.Day == 14) return "💘";  // Valentine's Day
+        if (day.Month == 3 && day.Day == 17) return "☘️";  // St. Patrick's Day
+        if (day.Month == 7 && day.Day == 4) return "🇺🇸";   // Independence Day
+        if (day.Month == 10 && day.Day == 31) return "🎃"; // Halloween
+        if (day.Month == 12 && day.Day == 25) return "🎄"; // Christmas
+
+        // Floating US holidays
+        if (IsMemorialDay(day)) return "🪖";
+        if (IsThanksgiving(day)) return "🦃";
+
+        return null;
+    }
+
+    private static bool IsMemorialDay(DateTime day)
+    {
+        // Last Monday in May
+        return day.Month == 5 && day.DayOfWeek == DayOfWeek.Monday && day.AddDays(7).Month != 5;
+    }
+
+    private static bool IsThanksgiving(DateTime day)
+    {
+        // Fourth Thursday in November
+        return day.Month == 11 && day.DayOfWeek == DayOfWeek.Thursday && day.Day >= 22 && day.Day <= 28;
+    }
+
+    private void ToggleYearExpand(int year)
+    {
+        if (ExpandedYears.Contains(year)) ExpandedYears.Remove(year);
+        else ExpandedYears.Add(year);
+    }
+
+    private void ToggleMonthExpand(int year, int month)
+    {
+        var key = $"{year}-{month}";
+        if (ExpandedMonths.Contains(key)) ExpandedMonths.Remove(key);
+        else ExpandedMonths.Add(key);
+    }
+
+    private bool IsYearChecked(int year) =>
+        LogTree[year].Values.SelectMany(d => d).All(d => SelectedDays.Contains(d));
+
+    private bool IsMonthChecked(int year, int month) =>
+        LogTree[year][month].All(d => SelectedDays.Contains(d));
+
+    private void ToggleYear(int year, bool value)
+    {
+        foreach (var month in LogTree[year].Keys)
+            foreach (var day in LogTree[year][month])
+            {
+                if (value) SelectedDays.Add(day);
+                else SelectedDays.Remove(day);
+            }
+        NotifySelection();
+    }
+
+    private void ToggleMonth(int year, int month, bool value)
+    {
+        foreach (var day in LogTree[year][month])
+        {
+            if (value) SelectedDays.Add(day);
+            else SelectedDays.Remove(day);
+        }
+        NotifySelection();
+    }
+
+    private void ToggleDay(DateTime day, bool value)
+    {
+        if (value) SelectedDays.Add(day);
+        else SelectedDays.Remove(day);
+        NotifySelection();
+    }
+
+    private void ClearAll()
+    {
+        SelectedDays.Clear();
+        NotifySelection();
+    }
+
+    private void NotifySelection()
+    {
+        SelectionState.SelectedDays = new HashSet<DateTime>(SelectedDays);
+        SelectionState.NotifyChanged();
+        NavigationManager.NavigateTo("/report");
+    }
+}
+
+============================================================
+FILE: Components/Pages/Counter.razor
+============================================================
+﻿@page "/counter"
+@rendermode InteractiveServer
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @currentCount</p>
+
+<TelerikButton OnClick="IncrementCount"
+               ThemeColor="@ThemeConstants.Button.ThemeColor.Primary">
+    Click me
+</TelerikButton>
+
+@code {
+    private int currentCount = 0;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+}
+
+============================================================
+FILE: Components/Pages/Dashboard.razor
+============================================================
+@page "/"
+@rendermode InteractiveServer
+@inject IISLogViewer.Services.LogParserService LogParser
+
+<div class="page-header">
+    <div>
+        <h5>Overall Summary</h5>
+        <p>Total Files: @TotalFiles | Years: @TotalYears | Date Range: @DateRange</p>
+    </div>
+</div>
+
+
+@if (IsLoading)
+{
+    <div class="loading-panel" role="status" aria-live="polite" aria-busy="true">
+        <TelerikLoader Size="@ThemeConstants.Loader.Size.Large" Type="@LoaderType.InfiniteSpinner" />
+        <div class="loading-panel__text">Loading dashboard...</div>
+    </div>
+}
+else if (OverallReport != null)
+{
+    <div class="stats-grid">
+        <article class="stat-card">
+            <div class="stat-card__value">@OverallReport.TotalHits.ToString("N0")</div>
+            <div class="stat-card__label">Total Hits</div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--success">@SuccessCount.ToString("N0")</div>
+            <div class="stat-card__label">Successful (2xx/3xx)</div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--warning">@ClientErrorCount.ToString("N0")</div>
+            <div class="stat-card__label">Client Errors (4xx)</div>
+        </article>
+
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--error">@ServerErrorCount.ToString("N0")</div>
+            <div class="stat-card__label">Server Errors (5xx)</div>
+        </article>
+    </div>
+
+    <section class="surface-panel">
+        <Report ReportData="OverallReport" />
+    </section>
+}
+else
+{
+    <div class="loading-state">No report data was found.</div>
+}
+
+<style>
+    .page-header h1 {
+        margin: 0;
+        font-size: 1.45rem;
+        font-weight: 700;
+    }
+
+    .page-header p {
+        margin: 0.2rem 0 0.75rem;
+        color: var(--kendo-color-subtle, #666);
+        font-size: 0.98rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.65rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .stat-card {
+        /* padding: 0.75rem 0.8rem; */
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        border-radius: 80px;
+        background: var(--kendo-color-surface, #fff);
+        text-align: center;
+    }
+
+    .stat-card__value {
+        font-size: 1.55rem;
+        font-weight: 700;
+        color: var(--kendo-color-primary, #0d6efd);
+    }
+
+    .stat-card__value--success { color: #28a745; }
+    .stat-card__value--warning { color: #ff9800; }
+    .stat-card__value--error { color: #f44336; }
+
+    .stat-card__label {
+        margin-top: 0.2rem;
+        color: var(--kendo-color-subtle, #666);
+        font-size: 0.92rem;
+    }
+
+    .surface-panel {
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        border-radius: 12px;
+        padding: 0.75rem;
+        background: var(--kendo-color-surface, #fff);
+    }
+
+    .loading-state {
+        padding: 2rem 0;
+        color: var(--shell-subtle);
+    }
+
+    .loading-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        min-height: 220px;
+        border: 1px solid var(--shell-border);
+        border-radius: 18px;
+        background: var(--shell-panel);
+    }
+
+    .loading-panel__text {
+        color: var(--shell-subtle);
+        font-weight: 600;
+    }
+</style>
+
+@code {
+    private IISLogViewer.Services.LogReport? OverallReport;
+    private int SuccessCount;
+    private int ClientErrorCount;
+    private int ServerErrorCount;
+    private int TotalFiles;
+    private int TotalYears;
+    private string DateRange = "";
+    private bool IsLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await Task.Run(() =>
+            {
+                var tree = LogParser.GetLogTree();
+                TotalYears = tree.Count;
+                TotalFiles = tree.Values.SelectMany(m => m.Values).SelectMany(d => d).Count();
+
+                var allDates = tree.Values.SelectMany(m => m.Values).SelectMany(d => d).OrderBy(d => d).ToList();
+                if (allDates.Any())
+                    DateRange = $"{allDates.First():dd MMM yyyy} — {allDates.Last():dd MMM yyyy}";
+            });
+
+            // Await the parse call outside the Task.Run so Blazor handles the async context naturally
+            OverallReport = await LogParser.ParseAll();
+
+            if (OverallReport != null)
+            {
+                SuccessCount = OverallReport.StatusCodes
+                    .Where(s => s.Key >= 200 && s.Key < 400)
+                    .Sum(s => s.Value);
+
+                ClientErrorCount = OverallReport.StatusCodes
+                    .Where(s => s.Key >= 400 && s.Key < 500)
+                    .Sum(s => s.Value);
+
+                ServerErrorCount = OverallReport.StatusCodes
+                    .Where(s => s.Key >= 500)
+                    .Sum(s => s.Value);
+            }
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}
+
+============================================================
+FILE: Components/Pages/Error.razor
+============================================================
+﻿@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Error</PageTitle>
+
+<h1 class="text-danger">Error.</h1>
+<h2 class="text-danger">An error occurred while processing your request.</h2>
+
+@if (ShowRequestId)
+{
+    <p>
+        <strong>Request ID:</strong> <code>@RequestId</code>
+    </p>
+}
+
+<h3>Development Mode</h3>
+<p>
+    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
+</p>
+<p>
+    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
+    It can result in displaying sensitive information from exceptions to end users.
+    For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
+    and restarting the app.
+</p>
+
+@code{
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}
+
+============================================================
+FILE: Components/Pages/Report.razor
+============================================================
+@inject IISLogViewer.Services.LogParserService LogParserService
+
+<div class="report-tabs">
+    <TelerikTabStrip @bind-ActiveTabIndex="ActiveTabIndex" Class="report-tabs__strip">
+        <TabStripTab Title="@GetTabTitle(TabName.Pages)" />
+        <TabStripTab Title="@GetTabTitle(TabName.Documents)" />
+        <TabStripTab Title="@GetTabTitle(TabName.Popups)" />
+        <TabStripTab Title="@GetTabTitle(TabName.Users)" />
+        <TabStripTab Title="@GetTabTitle(TabName.HourlyHits)" />
+        <TabStripTab Title="@GetTabTitle(TabName.Weekdays)" />
+        <TabStripTab Title="@GetTabTitle(TabName.StatusCodes)" />
+        <TabStripTab Title="@GetTabTitle(TabName.IPs)" />
+        <TabStripTab Title="@GetTabTitle(TabName.Errors)" />
+        <TabStripTab Title="@GetTabTitle(TabName.SlowPages)" />
+    </TelerikTabStrip>
+
+    <div class="report-tabs__content" role="tabpanel">
+        @if (ActiveTab == TabName.Pages)
+        {
+            <div class="grid-toolbar">
+                <div>
+                    <h3>Top Pages</h3>
+                    <div class="toolbar-subtle">Includes entry pages and most common next page transitions.</div>
+                </div>
+                <TelerikTextBox Value="@_searchPages"
+                                ValueChanged="@(v => _searchPages = v ?? string.Empty)"
+                                Placeholder="Search pages"
+                                Width="260px"
+                                Size="@ThemeConstants.TextBox.Size.Small"
+                                FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                                DebounceDelay="250"
+                                ShowClearButton="true" />
+            </div>
+
+            <div class="report-note">
+                <strong>Hits:</strong> total requests for the page. |
+                <strong>Entry Hits:</strong> times this page was the first action in a user session window. |
+                <strong>Top Next Page:</strong> the most common page users visited immediately after this page.
+            </div>
+
+            @if (!FilteredTopPageRows.Any())
+            {
+                <div class="empty-state">No page data found.</div>
+            }
+            else
+            {
+                <TelerikGrid Data="@FilteredTopPageRows"
+                             Pageable="true"
+                             @bind-PageSize="_pageSize"
+                             Sortable="false"
+                             Size="@ThemeConstants.Grid.Size.Small">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(TopPageInsightRow.Page)" Title="Page" />
+                        <GridColumn Field="@nameof(TopPageInsightRow.HitsLabel)" Title="Hits" Width="120px">
+                            <Template Context="itemObj">
+                                @{ var row = (TopPageInsightRow)itemObj; }
+                                <div class="text-start">@row.HitsLabel</div>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(TopPageInsightRow.EntryHitsLabel)" Title="Entry Hits" Width="130px">
+                            <Template Context="itemObj">
+                                @{ var row = (TopPageInsightRow)itemObj; }
+                                <div class="text-start">@row.EntryHitsLabel</div>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(TopPageInsightRow.TopNextPage)" Title="Top Next Page" Width="360px">
+                            <Template Context="itemObj">
+                                @{ var row = (TopPageInsightRow)itemObj; }
+                                @if (row.HasFlowDetails)
+                                {
+                                    <a href="#"
+                                       class="next-page-link"
+                                       @onclick:preventDefault="true"
+                                       @onclick="() => OpenNextPageFlowPopup(row.Page)">
+                                        @row.TopNextPage
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@row.TopNextPage</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </TelerikGrid>
+            }
+
+            @if (_showNextPageFlowPopup)
+            {
+                <TelerikWindow Width="880px"
+                               Height="560px"
+                               Visible="@_showNextPageFlowPopup"
+                               Modal="true"
+                               Draggable="true"
+                               Resizable="true"
+                               Class="popup-window popup-window--flow">
+                    <WindowTitle>
+                        Next Page Flow - @_selectedFlowPage
+                    </WindowTitle>
+                    <WindowActions>
+                        <WindowAction Name="Close" />
+                    </WindowActions>
+                    <WindowContent>
+                        @if (!SelectedNextPageFlowRows.Any())
+                        {
+                            <div class="empty-state">No next-page transitions found for this page.</div>
+                        }
+                        else
+                        {
+                            <TelerikGrid Data="@SelectedNextPageFlowRows"
+                                         Pageable="true"
+                                         @bind-PageSize="_pageSize"
+                                         Sortable="false"
+                                         Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(NextPageFlowRow.NextPage)" Title="Next Page" />
+                                    <GridColumn Field="@nameof(NextPageFlowRow.CountLabel)" Title="Transitions" Width="140px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (NextPageFlowRow)itemObj; }
+                                            <div class="text-start">@row.CountLabel</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        }
+                    </WindowContent>
+                </TelerikWindow>
+            }
+        }
+        else if (ActiveTab == TabName.IPs)
+        {
+            <LabelValueSection Title="IP Addresses"
+                               Placeholder="Search IPs"
+                               LabelHeader="IP Address"
+                               ValueHeader="Hits"
+                               SearchValue="@_searchIPs"
+                               SearchValueChanged="@(v => _searchIPs = v)"
+                               Rows="@FilteredIpRows" />
+        }
+        else if (ActiveTab == TabName.Errors)
+        {
+            <LabelValueSection Title="Error Pages"
+                               Placeholder="Search errors"
+                               LabelHeader="Page"
+                               ValueHeader="Hits"
+                               SearchValue="@_searchErrors"
+                               SearchValueChanged="@(v => _searchErrors = v)"
+                               Rows="@FilteredErrorRows" />
+        }
+        else if (ActiveTab == TabName.Documents)
+        {
+            <div class="grid-toolbar">
+                <div><h3>Documents</h3></div>
+                  <TelerikTextBox Value="@_searchDocs"
+                            ValueChanged="OnDocsSearchChanged"
+                            Placeholder="Search documents"
+                            Width="260px"
+                            Size="@ThemeConstants.TextBox.Size.Small"
+                            FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                            DebounceDelay="250"
+                            ShowClearButton="true" />
+            </div>
+
+            @if (!FilteredDocumentRows.Any())
+            {
+                <div class="empty-state">No document downloads found.</div>
+            }
+            else
+            {
+                <TelerikGrid Data="@SortedDocuments"
+                             Pageable="true"
+                             @bind-PageSize="_pageSize"
+                             Sortable="false"
+                             Size="@ThemeConstants.Grid.Size.Small">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(DocumentRow.File)">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleDocSort(nameof(DocumentRow.File))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">File @SortGlyph(_docSortField, _docSortDesc, nameof(DocumentRow.File))</TelerikButton>
+                            </HeaderTemplate>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(DocumentRow.TypeLabel)" Width="90px">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleDocSort(nameof(DocumentRow.TypeLabel))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Type @SortGlyph(_docSortField, _docSortDesc, nameof(DocumentRow.TypeLabel))</TelerikButton>
+                            </HeaderTemplate>
+                            <Template Context="itemObj">
+                                @{ var row = (DocumentRow)itemObj; }
+                                <span class="text-muted">@row.TypeLabel</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(DocumentRow.DownloadsLabel)" Width="120px">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleDocSort(nameof(DocumentRow.DownloadsLabel))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Downloads @SortGlyph(_docSortField, _docSortDesc, nameof(DocumentRow.DownloadsLabel))</TelerikButton>
+                            </HeaderTemplate>
+                            <Template Context="itemObj">
+                                @{ var row = (DocumentRow)itemObj; }
+                                <div class="text-start">@row.DownloadsLabel</div>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(DocumentRow.AvgTimeLabel)" Width="120px">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleDocSort(nameof(DocumentRow.AvgTimeLabel))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Avg Time @SortGlyph(_docSortField, _docSortDesc, nameof(DocumentRow.AvgTimeLabel))</TelerikButton>
+                            </HeaderTemplate>
+                            <Template Context="itemObj">
+                                @{ var row = (DocumentRow)itemObj; }
+                                <div class="text-start">@row.AvgTimeLabel</div>
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </TelerikGrid>
+
+            }
+        }
+        else if (ActiveTab == TabName.Popups)
+        {
+            <LabelValueSection Title="Popups"
+                               Placeholder="Search popups"
+                               LabelHeader="Type"
+                               ValueHeader="Hits"
+                               SearchValue="@_searchPopups"
+                               SearchValueChanged="@(v => _searchPopups = v)"
+                               Rows="@FilteredPopupRows" />
+        }
+        else if (ActiveTab == TabName.StatusCodes)
+        {
+            <div class="grid-toolbar">
+                <div><h3>Status Codes</h3></div>
+                  <TelerikTextBox Value="@_searchStatus"
+                            ValueChanged="OnStatusSearchChanged"
+                            Placeholder="Search status"
+                            Width="260px"
+                            Size="@ThemeConstants.TextBox.Size.Small"
+                            FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                            DebounceDelay="250"
+                            ShowClearButton="true" />
+            </div>
+
+            @if (!FilteredStatusRows.Any())
+            {
+                <div class="empty-state">No status codes found.</div>
+            }
+            else
+            {
+                <TelerikGrid Data="@SortedStatuses"
+                             Pageable="true"
+                             @bind-PageSize="_pageSize"
+                             Sortable="false"
+                             Size="@ThemeConstants.Grid.Size.Small">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(StatusRow.StatusDisplay)" Width="220px">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleStatusSort(nameof(StatusRow.StatusDisplay))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Status @SortGlyph(_statusSortField, _statusSortDesc, nameof(StatusRow.StatusDisplay))</TelerikButton>
+                            </HeaderTemplate>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(StatusRow.CountLabel)" Width="140px">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleStatusSort(nameof(StatusRow.CountLabel))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Count @SortGlyph(_statusSortField, _statusSortDesc, nameof(StatusRow.CountLabel))</TelerikButton>
+                            </HeaderTemplate>
+                            <Template Context="itemObj">
+                                @{ var row = (StatusRow)itemObj; }
+                                <div class="text-start">@row.CountLabel</div>
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </TelerikGrid>
+
+            }
+        }
+        else if (ActiveTab == TabName.SlowPages)
+        {
+            <div class="grid-toolbar">
+                <div><h3>Slow Pages</h3></div>
+                  <TelerikTextBox Value="@_searchSlow"
+                            ValueChanged="OnSlowSearchChanged"
+                            Placeholder="Search slow pages"
+                            Width="260px"
+                            Size="@ThemeConstants.TextBox.Size.Small"
+                            FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                            DebounceDelay="250"
+                            ShowClearButton="true" />
+            </div>
+
+            @if (!FilteredSlowPageRows.Any())
+            {
+                <div class="empty-state">No slow pages found.</div>
+            }
+            else
+            {
+                <TelerikGrid Data="@SortedSlowPages"
+                             Pageable="true"
+                             @bind-PageSize="_pageSize"
+                             Sortable="false"
+                             Size="@ThemeConstants.Grid.Size.Small">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(SlowPageRow.Page)">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleSlowSort(nameof(SlowPageRow.Page))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Page @SortGlyph(_slowSortField, _slowSortDesc, nameof(SlowPageRow.Page))</TelerikButton>
+                            </HeaderTemplate>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(SlowPageRow.AvgTimeLabel)" Width="160px">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleSlowSort(nameof(SlowPageRow.AvgTimeLabel))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Avg Time (ms) @SortGlyph(_slowSortField, _slowSortDesc, nameof(SlowPageRow.AvgTimeLabel))</TelerikButton>
+                            </HeaderTemplate>
+                            <Template Context="itemObj">
+                                @{ var row = (SlowPageRow)itemObj; }
+                                <div class="text-start">@row.AvgTimeLabel</div>
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </TelerikGrid>
+
+            }
+        }
+        else if (ActiveTab == TabName.HourlyHits)
+        {
+            <div class="grid-toolbar">
+                <div>
+                    <h3>Hourly Hits</h3>
+                    <div class="toolbar-subtle">Timezone: @LogParserService.TargetTimeZoneId</div>
+                </div>
+                  <TelerikTextBox Value="@_searchHours"
+                            ValueChanged="OnHoursSearchChanged"
+                            Placeholder="Search hours"
+                            Width="260px"
+                            Size="@ThemeConstants.TextBox.Size.Small"
+                            FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                            DebounceDelay="250"
+                            ShowClearButton="true" />
+            </div>
+
+            @if (!FilteredHourRows.Any())
+            {
+                <div class="empty-state">No hourly data found.</div>
+            }
+            else
+            {
+                <TelerikGrid Data="@SortedHours"
+                             Pageable="true"
+                             @bind-PageSize="_pageSize"
+                             Sortable="false"
+                             Size="@ThemeConstants.Grid.Size.Small">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(HourRow.HourLabel)" Width="120px">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleHourSort(nameof(HourRow.HourLabel))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Hour @SortGlyph(_hourSortField, _hourSortDesc, nameof(HourRow.HourLabel))</TelerikButton>
+                            </HeaderTemplate>
+                            <Template Context="itemObj">
+                                @{ var row = (HourRow)itemObj; }
+                                <a href="#"
+                                   class="hour-link"
+                                   @onclick:preventDefault="true"
+                                   @onclick="() => OpenHourlyPopup(row.HourLabel)">
+                                    @row.HourLabel
+                                </a>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(HourRow.HitsLabel)" Width="140px">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleHourSort(nameof(HourRow.HitsLabel))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Hits @SortGlyph(_hourSortField, _hourSortDesc, nameof(HourRow.HitsLabel))</TelerikButton>
+                            </HeaderTemplate>
+                            <Template Context="itemObj">
+                                @{ var row = (HourRow)itemObj; }
+                                <div class="text-start">@row.HitsLabel</div>
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </TelerikGrid>
+
+            }
+
+            <HourlyHitsDetailPopup IsOpen="@_showHourlyDetailsPopup"
+                                   SelectedHour="@_selectedHour"
+                                   ReportData="@ReportData"
+                                   OnClose="CloseHourlyPopup" />
+        }
+        else if (ActiveTab == TabName.Weekdays)
+        {
+            <div class="grid-toolbar">
+                <div><h3>Day Of Week</h3></div>
+            </div>
+
+            <TelerikGrid Data="@WeekdayRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                <GridColumns>
+                    <GridColumn Field="@nameof(WeekdayListRow.DayLabel)" Title="Day">
+                        <Template Context="itemObj">
+                            @{ var row = (WeekdayListRow)itemObj; }
+                            <a href="#"
+                               class="weekday-link"
+                               @onclick:preventDefault="true"
+                               @onclick="() => OpenWeekdayPopup(row.DayIndex)">
+                                @row.DayLabel
+                            </a>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(WeekdayListRow.HitsLabel)" Title="Hits" Width="140px">
+                        <Template Context="itemObj">
+                            @{ var row = (WeekdayListRow)itemObj; }
+                            <div class="text-start">@row.HitsLabel</div>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </TelerikGrid>
+
+            <WeekdayDetailPopup IsOpen="@_showWeekdayDetailsPopup"
+                                SelectedWeekday="@_selectedWeekday"
+                                ReportData="@ReportData"
+                                OnClose="CloseWeekdayPopup" />
+        }
+        else if (ActiveTab == TabName.Users)
+        {
+            <div class="grid-toolbar">
+                <div><h3>Users</h3></div>
+                  <TelerikTextBox Value="@_searchUsers"
+                            ValueChanged="OnUsersSearchChanged"
+                            Placeholder="Search users"
+                            Width="260px"
+                            Size="@ThemeConstants.TextBox.Size.Small"
+                            FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                            DebounceDelay="250"
+                            ShowClearButton="true" />
+            </div>
+
+            @if (!FilteredUserRows.Any())
+            {
+                <div class="empty-state">No user data found. Enable cs-username in IIS log fields.</div>
+            }
+            else
+            {
+                <TelerikGrid Data="@SortedUsers"
+                             Pageable="true"
+                             @bind-PageSize="_pageSize"
+                             Sortable="false"
+                             Size="@ThemeConstants.Grid.Size.Small">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(UserRow.DisplayName)">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleUserSort(nameof(UserRow.DisplayName))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Name @SortGlyph(_userSortField, _userSortDesc, nameof(UserRow.DisplayName))</TelerikButton>
+                            </HeaderTemplate>
+                            <Template Context="itemObj">
+                                @{ var row = (UserRow)itemObj; }
+                                <a href="#"
+                                   class="user-link"
+                                   @onclick:preventDefault="true"
+                                   @onclick="() => OpenUserPopup(row.UserName)">
+                                    @row.DisplayName
+                                </a>
+                                @if (!string.IsNullOrWhiteSpace(row.Email))
+                                {
+                                    <div class="toolbar-subtle">@row.Email</div>
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(UserRow.Department)" Width="180px">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleUserSort(nameof(UserRow.Department))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Department @SortGlyph(_userSortField, _userSortDesc, nameof(UserRow.Department))</TelerikButton>
+                            </HeaderTemplate>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(UserRow.HitsLabel)" Width="140px">
+                            <HeaderTemplate>
+                                <TelerikButton OnClick="() => ToggleUserSort(nameof(UserRow.HitsLabel))" FillMode="@ThemeConstants.Button.FillMode.Flat" Size="@ThemeConstants.Button.Size.Small">Hits @SortGlyph(_userSortField, _userSortDesc, nameof(UserRow.HitsLabel))</TelerikButton>
+                            </HeaderTemplate>
+                            <Template Context="itemObj">
+                                @{ var row = (UserRow)itemObj; }
+                                <div class="text-start">@row.HitsLabel</div>
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </TelerikGrid>
+
+            }
+
+            <UserHitsDetailPopup IsOpen="@_showUserDetailsPopup"
+                                 SelectedUser="@_selectedUser"
+                                 SelectedUserDisplayName="@_selectedUserDisplayName"
+                                 SelectedDays="@SelectedDays"
+                                 ReportData="@ReportData"
+                                 OnClose="CloseUserPopup" />
+        }
+    </div>
+</div>
+
+<style>
+    .report-tabs {
+        display: block;
+    }
+
+    .report-tabs__strip {
+        margin-bottom: 10px;
+    }
+
+    .report-tabs__strip .k-tabstrip-content,
+    .report-tabs__strip .k-content.k-active {
+        display: none;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        min-height: 0;
+    }
+
+    .report-tabs__content {
+        min-height: 0;
+    }
+
+    .grid-toolbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 0.65rem;
+        min-height: 40px;
+    }
+
+    .grid-toolbar h3 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--kendo-color-on-surface, inherit) !important;
+        opacity: 1 !important;
+    }
+
+    .toolbar-subtle {
+        margin-top: 0.1rem;
+        font-size: 0.76rem;
+        color: var(--kendo-color-subtle, #666);
+    }
+
+    .empty-state {
+        padding: 0.75rem 0.2rem 0.35rem;
+        color: var(--kendo-color-subtle, #666);
+    }
+
+    .report-note {
+        margin: 0.2rem 0 0.65rem;
+        padding: 0.45rem 0.6rem;
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 4%, #fff);
+        font-size: 0.78rem;
+        color: var(--kendo-color-subtle, #666);
+    }
+
+    .weekday-link,
+    .hour-link,
+    .user-link,
+    .next-page-link {
+        color: var(--kendo-color-primary, #0d6efd) !important;
+        text-decoration: none;
+        cursor: pointer;
+        font-weight: 600;
+        display: inline-block;
+        padding: 0.05rem 0;
+    }
+
+    .weekday-link:hover,
+    .hour-link:hover,
+    .user-link:hover,
+    .next-page-link:hover {
+        color: color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 85%, #000) !important;
+        text-decoration: underline;
+    }
+
+    .weekday-link:focus-visible,
+    .hour-link:focus-visible,
+    .user-link:focus-visible,
+    .next-page-link:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 45%, transparent);
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+    @@media (max-width: 720px) {
+        .grid-toolbar {
+            align-items: stretch;
+            flex-direction: column;
+        }
+    }
+</style>
+
+@code {
+    [Parameter]
+    public IISLogViewer.Services.LogReport? ReportData { get; set; }
+
+    [Parameter]
+    public IEnumerable<DateTime>? SelectedDays { get; set; }
+
+    private enum TabName
+    {
+        Pages,
+        IPs,
+        Errors,
+        Documents,
+        Popups,
+        StatusCodes,
+        SlowPages,
+        HourlyHits,
+        Weekdays,
+        Users
+    }
+
+    private static readonly IReadOnlyList<TabName> Tabs = new[]
+    {
+        TabName.Pages,
+        TabName.Documents,
+        TabName.Popups,
+        TabName.Users,
+        TabName.HourlyHits,
+        TabName.Weekdays,
+        TabName.StatusCodes,
+        TabName.IPs,
+        TabName.Errors,
+        TabName.SlowPages,
+    };
+
+    private int _activeTabIndex;
+
+    private int ActiveTabIndex
+    {
+        get => _activeTabIndex;
+        set
+        {
+            if (_activeTabIndex == value)
+                return;
+
+            _activeTabIndex = value;
+            CloseAllPopups();
+        }
+    }
+
+    private TabName ActiveTab =>
+        ActiveTabIndex >= 0 && ActiveTabIndex < Tabs.Count ? Tabs[ActiveTabIndex] : TabName.Pages;
+
+    private string GetTabTitle(TabName tab)
+    {
+        var (name, count) = tab switch
+        {
+            TabName.Pages => ("🔥 Pages", ReportData?.PageHits?.Count ?? 0),
+            TabName.IPs => ("🌐 IPs", ReportData?.TopIPs?.Count ?? 0),
+            TabName.Errors => ("❌ Errors", ReportData?.ErrorPages?.Count ?? 0),
+            TabName.Documents => ("📄 Documents", ReportData?.DocumentHits?.Count ?? 0),
+            TabName.Popups => ("🪟 Popups", ReportData?.PopupHits?.Count ?? 0),
+            TabName.StatusCodes => ("📊 Status Codes", ReportData?.StatusCodes?.Count ?? 0),
+            TabName.SlowPages => ("🐢 Slow Pages", ReportData?.SlowPages?.Count ?? 0),
+            TabName.HourlyHits => ("⏰ Hourly Hits", ReportData?.HourlyHits?.Count ?? 0),
+            TabName.Weekdays => ("📅 Day Of Week", 7),
+            TabName.Users => ("👤 Users", ReportData?.UserHits?.Count ?? 0),
+            _ => (tab.ToString(), 0)
+        };
+
+        return $"{name} ({count:N0})";
+    }
+
+    // Search strings for each distinct tab
+    private string _searchPages = "";
+    private string _searchIPs = "";
+    private string _searchErrors = "";
+    private string _searchDocs = "";
+    private string _searchPopups = "";
+    private string _searchStatus = "";
+    private string _searchSlow = "";
+    private string _searchHours = "";
+    private string _searchUsers = "";
+
+    private IEnumerable<TopPageInsightRow> FilteredTopPageRows =>
+        BuildTopPageInsights()
+            .Where(row => FilterCore($"{row.Page} {row.TopNextPage}", _searchPages));
+
+    private IEnumerable<LabelValueRow> FilteredIpRows => FilterLabelValueRows(ReportData?.TopIPs, _searchIPs);
+    private IEnumerable<LabelValueRow> FilteredErrorRows => FilterLabelValueRows(ReportData?.ErrorPages, _searchErrors);
+    private IEnumerable<LabelValueRow> FilteredPopupRows => FilterLabelValueRows(ReportData?.PopupHits, _searchPopups);
+    private IEnumerable<DocumentRow> FilteredDocumentRows => (ReportData?.DocumentHits ?? [])
+        .Select(item =>
+        {
+            var ext = Path.GetExtension(item.Key).ToLowerInvariant();
+            var avgMs = ReportData?.DocumentAvgTime.GetValueOrDefault(item.Key) ?? 0;
+            return new DocumentRow(
+                item.Key,
+                string.IsNullOrWhiteSpace(ext) ? "unknown" : ext.TrimStart('.'),
+                item.Value.ToString("N0"),
+                $"{avgMs:N0} ms");
+        })
+        .Where(item => FilterCore($"{item.File} {item.TypeLabel}", _searchDocs))
+        .OrderByDescending(item => int.Parse(item.DownloadsLabel.Replace(",", string.Empty)));
+
+    private IEnumerable<StatusRow> FilteredStatusRows => (ReportData?.StatusCodes ?? [])
+        .OrderByDescending(item => item.Value)
+        .Select(item => new StatusRow(item.Key, IISLogViewer.Services.LogParserService.GetStatusDisplay(item.Key), item.Value.ToString("N0")))
+        .Where(item => FilterCore(item.StatusDisplay, _searchStatus));
+
+    private IEnumerable<SlowPageRow> FilteredSlowPageRows => (ReportData?.SlowPages ?? [])
+        .Select(item => new SlowPageRow(item.Key, $"{item.Value:N0} ms"))
+        .Where(item => FilterCore(item.Page, _searchSlow))
+        .OrderByDescending(item => ParseMetric(item.AvgTimeLabel));
+
+    private IEnumerable<HourRow> FilteredHourRows => (ReportData?.HourlyHits ?? [])
+        .OrderByDescending(item => item.Value)
+        .Select(item => new HourRow(item.Key.ToString("D2"), item.Value.ToString("N0")))
+        .Where(item => FilterCore(item.HourLabel, _searchHours));
+
+    private IEnumerable<UserRow> FilteredUserRows => (ReportData?.UserHits ?? [])
+        .Select(item => BuildUserRow(item.Key, item.Value))
+        .Where(item => FilterCore($"{item.UserName} {item.DisplayName} {item.Department} {item.Email}", _searchUsers));
+
+    private IEnumerable<WeekdayListRow> WeekdayRows => BuildWeekdayRows();
+
+    private void OnDocsSearchChanged(string value)
+    {
+        _searchDocs = value ?? "";
+    }
+
+    private void OnStatusSearchChanged(string value)
+    {
+        _searchStatus = value ?? "";
+    }
+
+    private void OnSlowSearchChanged(string value)
+    {
+        _searchSlow = value ?? "";
+    }
+
+    private void OnHoursSearchChanged(string value)
+    {
+        _searchHours = value ?? "";
+    }
+
+    private void OnUsersSearchChanged(string value)
+    {
+        _searchUsers = value ?? "";
+    }
+
+    private bool FilterCore(string search, string searchStr)
+    {
+        if (string.IsNullOrWhiteSpace(searchStr))
+            return true;
+        return search.Contains(searchStr, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private IEnumerable<LabelValueRow> FilterLabelValueRows(IEnumerable<KeyValuePair<string, int>>? source, string searchText) =>
+        (source ?? [])
+            .Where(item => FilterCore(item.Key, searchText))
+            .OrderByDescending(item => item.Value)
+            .Select(item => new LabelValueRow(item.Key, item.Value.ToString("N0")));
+
+    private IEnumerable<TopPageInsightRow> BuildTopPageInsights()
+    {
+        var pageHits = ReportData?.PageHits ?? new Dictionary<string, int>();
+        var entryHits = ReportData?.PageEntryHits ?? new Dictionary<string, int>();
+        var transitions = ReportData?.PageNextPageHits ?? new Dictionary<string, Dictionary<string, int>>();
+
+        foreach (var page in pageHits.OrderByDescending(x => x.Value).ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            var entries = entryHits.TryGetValue(page.Key, out var entryCount) ? entryCount : 0;
+
+            var topNext = "-";
+            var hasFlow = false;
+            if (transitions.TryGetValue(page.Key, out var nextMap) && nextMap.Any())
+            {
+                var next = nextMap
+                    .OrderByDescending(x => x.Value)
+                    .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                    .First();
+                topNext = $"{next.Key} ({next.Value:N0})";
+                hasFlow = true;
+            }
+
+            yield return new TopPageInsightRow(
+                page.Key,
+                page.Value.ToString("N0"),
+                entries.ToString("N0"),
+                topNext,
+                hasFlow);
+        }
+    }
+
+    private IEnumerable<NextPageFlowRow> SelectedNextPageFlowRows =>
+        BuildNextPageFlowRows(_selectedFlowPage).Take(5);
+
+    private IEnumerable<NextPageFlowRow> BuildNextPageFlowRows(string page)
+    {
+        if (string.IsNullOrWhiteSpace(page))
+            yield break;
+
+        var transitions = ReportData?.PageNextPageHits ?? new Dictionary<string, Dictionary<string, int>>();
+        if (!transitions.TryGetValue(page, out var nextMap) || !nextMap.Any())
+            yield break;
+
+        foreach (var item in nextMap.OrderByDescending(x => x.Value).ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return new NextPageFlowRow(item.Key, item.Value.ToString("N0"));
+        }
+    }
+
+    private static int ParseMetric(string value) =>
+        int.TryParse(value.Replace(" ms", string.Empty).Replace(",", string.Empty), out var parsed) ? parsed : 0;
+
+    private sealed record DocumentRow(string File, string TypeLabel, string DownloadsLabel, string AvgTimeLabel);
+    private sealed record StatusRow(int StatusCode, string StatusDisplay, string CountLabel);
+    private sealed record SlowPageRow(string Page, string AvgTimeLabel);
+    private sealed record HourRow(string HourLabel, string HitsLabel);
+    private sealed record WeekdayListRow(int DayIndex, string DayLabel, string HitsLabel);
+    private sealed record TopPageInsightRow(string Page, string HitsLabel, string EntryHitsLabel, string TopNextPage, bool HasFlowDetails);
+    private sealed record NextPageFlowRow(string NextPage, string CountLabel);
+    private sealed record UserRow(string UserName, string DisplayName, string Department, string Email, string HitsLabel);
+
+    private int _pageSize = 10;
+
+    private string _docSortField = nameof(DocumentRow.DownloadsLabel);
+    private bool _docSortDesc = true;
+
+    private string _statusSortField = nameof(StatusRow.CountLabel);
+    private bool _statusSortDesc = true;
+
+    private string _slowSortField = nameof(SlowPageRow.AvgTimeLabel);
+    private bool _slowSortDesc = true;
+
+    private string _hourSortField = nameof(HourRow.HitsLabel);
+    private bool _hourSortDesc = true;
+
+    private string _userSortField = nameof(UserRow.HitsLabel);
+    private bool _userSortDesc = true;
+
+    private bool _showHourlyDetailsPopup;
+    private int _selectedHour;
+    private bool _showWeekdayDetailsPopup;
+    private int _selectedWeekday;
+    private bool _showUserDetailsPopup;
+    private string _selectedUser = "";
+    private string _selectedUserDisplayName = "";
+    private bool _showNextPageFlowPopup;
+    private string _selectedFlowPage = "";
+
+    private static int ParseNumber(string formatted) =>
+        int.TryParse(formatted.Replace(",", string.Empty), out var parsed) ? parsed : 0;
+
+    private IEnumerable<DocumentRow> SortDocuments(IEnumerable<DocumentRow> rows, string sortField, bool desc)
+    {
+        Func<DocumentRow, object> keySelector = sortField switch
+        {
+            nameof(DocumentRow.File) => r => r.File,
+            nameof(DocumentRow.TypeLabel) => r => r.TypeLabel,
+            nameof(DocumentRow.AvgTimeLabel) => r => ParseMetric(r.AvgTimeLabel),
+            _ => r => ParseNumber(r.DownloadsLabel)
+        };
+        return desc ? rows.OrderByDescending(keySelector) : rows.OrderBy(keySelector);
+    }
+
+    private IEnumerable<StatusRow> SortStatus(IEnumerable<StatusRow> rows, string sortField, bool desc)
+    {
+        Func<StatusRow, object> keySelector = sortField switch
+        {
+            nameof(StatusRow.StatusDisplay) => r => r.StatusCode,
+            _ => r => ParseNumber(r.CountLabel)
+        };
+        return desc ? rows.OrderByDescending(keySelector) : rows.OrderBy(keySelector);
+    }
+
+    private IEnumerable<SlowPageRow> SortSlow(IEnumerable<SlowPageRow> rows, string sortField, bool desc)
+    {
+        Func<SlowPageRow, object> keySelector = sortField switch
+        {
+            nameof(SlowPageRow.Page) => r => r.Page,
+            _ => r => ParseMetric(r.AvgTimeLabel)
+        };
+        return desc ? rows.OrderByDescending(keySelector) : rows.OrderBy(keySelector);
+    }
+
+    private IEnumerable<HourRow> SortHours(IEnumerable<HourRow> rows, string sortField, bool desc)
+    {
+        Func<HourRow, object> keySelector = sortField switch
+        {
+            nameof(HourRow.HourLabel) => r => ParseNumber(r.HourLabel),
+            _ => r => ParseNumber(r.HitsLabel)
+        };
+        return desc ? rows.OrderByDescending(keySelector) : rows.OrderBy(keySelector);
+    }
+
+    private IEnumerable<UserRow> SortUsers(IEnumerable<UserRow> rows, string sortField, bool desc)
+    {
+        Func<UserRow, object> keySelector = sortField switch
+        {
+            nameof(UserRow.UserName) => r => r.UserName,
+            nameof(UserRow.DisplayName) => r => r.DisplayName,
+            nameof(UserRow.Department) => r => r.Department,
+            _ => r => ParseNumber(r.HitsLabel)
+        };
+        return desc ? rows.OrderByDescending(keySelector) : rows.OrderBy(keySelector);
+    }
+
+    private static string SortGlyph(string activeField, bool desc, string field) =>
+        activeField == field ? (desc ? "▼" : "▲") : "";
+
+    private List<DocumentRow> SortedDocuments =>
+        SortDocuments(FilteredDocumentRows, _docSortField, _docSortDesc).ToList();
+
+    private void ToggleDocSort(string field) => ToggleSort(ref _docSortField, ref _docSortDesc, field);
+
+    private List<StatusRow> SortedStatuses =>
+        SortStatus(FilteredStatusRows, _statusSortField, _statusSortDesc).ToList();
+
+    private void ToggleStatusSort(string field) => ToggleSort(ref _statusSortField, ref _statusSortDesc, field);
+
+    private List<SlowPageRow> SortedSlowPages =>
+        SortSlow(FilteredSlowPageRows, _slowSortField, _slowSortDesc).ToList();
+
+    private void ToggleSlowSort(string field) => ToggleSort(ref _slowSortField, ref _slowSortDesc, field);
+
+    private List<HourRow> SortedHours =>
+        SortHours(FilteredHourRows, _hourSortField, _hourSortDesc).ToList();
+
+    private void ToggleHourSort(string field) => ToggleSort(ref _hourSortField, ref _hourSortDesc, field);
+
+    private List<UserRow> SortedUsers =>
+        SortUsers(FilteredUserRows, _userSortField, _userSortDesc).ToList();
+
+    private void ToggleUserSort(string field) => ToggleSort(ref _userSortField, ref _userSortDesc, field);
+
+    private static void ToggleSort(ref string sortField, ref bool sortDesc, string field)
+    {
+        if (sortField == field)
+        {
+            sortDesc = !sortDesc;
+            return;
+        }
+
+        sortField = field;
+        sortDesc = true;
+    }
+
+    private void OpenHourlyPopup(string hourLabel)
+    {
+        if (!int.TryParse(hourLabel, out var parsedHour))
+            return;
+
+        _selectedHour = parsedHour;
+        _showHourlyDetailsPopup = true;
+        StateHasChanged();
+    }
+
+    private void CloseHourlyPopup()
+    {
+        _showHourlyDetailsPopup = false;
+    }
+
+    private void OpenWeekdayPopup(int dayIndex)
+    {
+        if (dayIndex is < 0 or > 6)
+            return;
+
+        _selectedWeekday = dayIndex;
+        _showWeekdayDetailsPopup = true;
+    }
+
+    private void CloseWeekdayPopup()
+    {
+        _showWeekdayDetailsPopup = false;
+    }
+
+    private void OpenUserPopup(string userName)
+    {
+        if (string.IsNullOrWhiteSpace(userName))
+            return;
+
+        _selectedUser = userName;
+        _selectedUserDisplayName = LogParserService.GetUserDisplayName(userName);
+        _showUserDetailsPopup = true;
+    }
+
+    private void CloseUserPopup()
+    {
+        _showUserDetailsPopup = false;
+    }
+
+    private void OpenNextPageFlowPopup(string page)
+    {
+        if (string.IsNullOrWhiteSpace(page))
+            return;
+
+        _selectedFlowPage = page;
+        _showNextPageFlowPopup = true;
+    }
+
+    private void CloseNextPageFlowPopup()
+    {
+        _showNextPageFlowPopup = false;
+        _selectedFlowPage = "";
+    }
+
+    private void CloseAllPopups()
+    {
+        _showHourlyDetailsPopup = false;
+        _showWeekdayDetailsPopup = false;
+        _showUserDetailsPopup = false;
+        CloseNextPageFlowPopup();
+    }
+
+    private UserRow BuildUserRow(string userName, int hits)
+    {
+        var profile = LogParserService.GetUserProfile(userName);
+        return new UserRow(
+            userName,
+            profile?.Name ?? userName,
+            string.IsNullOrWhiteSpace(profile?.Department) ? "Unknown" : profile!.Department,
+            profile?.Email ?? "",
+            hits.ToString("N0"));
+    }
+
+    private IEnumerable<WeekdayListRow> BuildWeekdayRows()
+    {
+        var source = ReportData?.WeekdayHits ?? new Dictionary<int, int>();
+        var order = new[]
+        {
+            DayOfWeek.Monday,
+            DayOfWeek.Tuesday,
+            DayOfWeek.Wednesday,
+            DayOfWeek.Thursday,
+            DayOfWeek.Friday,
+            DayOfWeek.Saturday,
+            DayOfWeek.Sunday
+        };
+
+        foreach (var day in order)
+        {
+            var key = (int)day;
+            var hits = source.TryGetValue(key, out var count) ? count : 0;
+            yield return new WeekdayListRow(key, day.ToString(), hits.ToString("N0"));
+        }
+    }
+}
+
+============================================================
+FILE: Components/Pages/ReportSelected.razor
+============================================================
+@page "/report"
+@rendermode InteractiveServer
+@inject IISLogViewer.Services.LogParserService LogParser
+@inject IISLogViewer.Services.SelectionState SelectionState
+@implements IDisposable
+
+<div class="page-header">
+    <h5>@ReportTitle</h5>
+</div>
+
+@if (!SelectionState.SelectedDays.Any())
+{
+    <div class="info-banner">
+        Select dates from the tree on the left to generate a report.
+    </div>
+}
+else if (_isLoading)
+{
+    <div class="loading-state">
+        <TelerikLoader Size="@ThemeConstants.Loader.Size.Medium" Type="@LoaderType.InfiniteSpinner" />
+        <span>Loading report for @SelectionState.SelectedDays.Count day(s)...</span>
+    </div>
+}
+else if (CurrentReport == null)
+{
+    <div class="info-banner">
+        No data was returned for the selected dates.
+    </div>
+}
+else
+{
+    <div class="stats-grid">
+        <article class="stat-card">
+            <div class="stat-card__value">@CurrentReport.TotalHits.ToString("N0")</div>
+            <div class="stat-card__label">Total Hits</div>
+        </article>
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--success">@SuccessCount.ToString("N0")</div>
+            <div class="stat-card__label">Successful (2xx/3xx)</div>
+        </article>
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--warning">@ClientErrorCount.ToString("N0")</div>
+            <div class="stat-card__label">Client Errors (4xx)</div>
+        </article>
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--error">@ServerErrorCount.ToString("N0")</div>
+            <div class="stat-card__label">Server Errors (5xx)</div>
+        </article>
+    </div>
+
+    <section class="surface-panel">
+        <Report ReportData="CurrentReport" SelectedDays="SelectionState.SelectedDays" />
+    </section>
+}
+
+<style>
+    .page-header h1 {
+        margin: 0 0 0.8rem;
+        font-size: 1.45rem;
+        font-weight: 700;
+    }
+
+    .info-banner,
+    .surface-panel,
+    .stat-card {
+        border: 1px solid var(--shell-border, var(--kendo-color-border, #d4d4d4));
+        border-radius: 18px;
+        background: var(--shell-panel, var(--kendo-color-surface, #fff));
+    }
+
+    .info-banner {
+        padding: 1rem 1.1rem;
+        color: var(--shell-subtle);
+    }
+
+    .loading-state {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--kendo-color-subtle, #666);
+        padding: 0.75rem 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.65rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .stat-card {
+        /* padding: 0.75rem 0.8rem; */
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        border-radius: 81px;
+        background: var(--kendo-color-surface, #fff);
+        text-align: center;
+    }
+
+    .stat-card__value {
+        font-size: 1.55rem;
+        font-weight: 700;
+        color: var(--kendo-color-primary, #0d6efd);
+    }
+
+    .stat-card__value--success { color: #28a745; }
+    .stat-card__value--warning { color: #ff9800; }
+    .stat-card__value--error { color: #f44336; }
+
+    .stat-card__label {
+        margin-top: 0.2rem;
+        color: var(--kendo-color-subtle, #666);
+        font-size: 0.92rem;
+    }
+
+    .surface-panel {
+        padding: 0.75rem;
+    }
+
+</style>
+
+@code {
+    private IISLogViewer.Services.LogReport? CurrentReport;
+    private string ReportTitle = "Report";
+    private int SuccessCount;
+    private int ClientErrorCount;
+    private int ServerErrorCount;
+    private bool _isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SelectionState.OnChange += OnSelectionChanged;
+        await LoadReport();
+    }
+
+    private async void OnSelectionChanged()
+    {
+        await LoadReport();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadReport()
+    {
+        _isLoading = true;
+        CurrentReport = null;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            if (!SelectionState.SelectedDays.Any())
+            {
+                ReportTitle = "Report";
+                return;
+            }
+
+            var days = SelectionState.SelectedDays.ToList();
+
+            ReportTitle = days.Count == 1
+                ? $"Report for {days[0]:dddd, dd MMMM yyyy}"
+                : $"Report for {days.Count} selected days ({days.Min():dd MMM yyyy} — {days.Max():dd MMM yyyy})";
+
+            if (days.Count == 1)
+            {
+                CurrentReport = await LogParser.ParseFile(days[0]);
+            }
+            else
+            {
+                CurrentReport = await LogParser.ParseDates(days);
+            }
+
+            if (CurrentReport != null)
+            {
+                SuccessCount = CurrentReport.StatusCodes
+                    .Where(s => s.Key >= 200 && s.Key < 400).Sum(s => s.Value);
+                ClientErrorCount = CurrentReport.StatusCodes
+                    .Where(s => s.Key >= 400 && s.Key < 500).Sum(s => s.Value);
+                ServerErrorCount = CurrentReport.StatusCodes
+                    .Where(s => s.Key >= 500).Sum(s => s.Value);
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        SelectionState.OnChange -= OnSelectionChanged;
+    }
+}
+
+============================================================
+FILE: Components/Pages/Weather.razor
+============================================================
+﻿@page "/weather"
+@attribute [StreamRendering]
+
+<PageTitle>Weather</PageTitle>
+
+<h1>Weather</h1>
+
+<p>This component demonstrates showing data.</p>
+
+@if (forecasts == null)
+{
+    <div class="d-flex align-items-center gap-2">
+        <TelerikLoader Size="@ThemeConstants.Loader.Size.Small" Type="@LoaderType.InfiniteSpinner" />
+        <em>Loading...</em>
+    </div>
+}
+else
+{
+    <TelerikGrid Data="@forecasts" Sortable="true" Pageable="true" PageSize="10" Resizable="true">
+        <GridColumns>
+            <GridColumn Field="@nameof(WeatherForecast.Date)" Title="Date">
+                <Template Context="itemObj">
+                    @{ var forecast = (WeatherForecast)itemObj; }
+                    @forecast.Date.ToShortDateString()
+                </Template>
+            </GridColumn>
+            <GridColumn Field="@nameof(WeatherForecast.TemperatureC)" Title="Temp. (C)" />
+            <GridColumn Field="@nameof(WeatherForecast.TemperatureF)" Title="Temp. (F)" />
+            <GridColumn Field="@nameof(WeatherForecast.Summary)" Title="Summary" />
+        </GridColumns>
+    </TelerikGrid>
+}
+
+@code {
+    private WeatherForecast[]? forecasts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate asynchronous loading to demonstrate streaming rendering
+        await Task.Delay(500);
+
+        var startDate = DateOnly.FromDateTime(DateTime.Now);
+        var summaries = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
+        forecasts = Enumerable.Range(1, 5).Select(index => new WeatherForecast
+        {
+            Date = startDate.AddDays(index),
+            TemperatureC = Random.Shared.Next(-20, 55),
+            Summary = summaries[Random.Shared.Next(summaries.Length)]
+        }).ToArray();
+    }
+
+    private class WeatherForecast
+    {
+        public DateOnly Date { get; set; }
+        public int TemperatureC { get; set; }
+        public string? Summary { get; set; }
+        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    }
+}
+
+============================================================
+FILE: Components/Routes.razor
+============================================================
+﻿<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>
+
+============================================================
+FILE: Components/Shared/HourlyHitsDetailPopup.razor
+============================================================
+@if (IsOpen)
+{
+    <TelerikWindow Width="900px"
+                   Height="620px"
+                   Visible="@IsOpen"
+                   Modal="true"
+                   Draggable="true"
+                   Resizable="true"
+                   Class="popup-window popup-window--hourly">
+        <WindowTitle>
+            Hourly Details - @SelectedHourLabel:00:00
+        </WindowTitle>
+        <WindowActions>
+            <WindowAction Name="Close" />
+        </WindowActions>
+        <WindowContent>
+            <TelerikTabStrip Class="popup-tabs">
+                        <TabStripTab Title="🔥 Top Pages">
+                            @if (!TopPagesRows.Any())
+                            {
+                                <div class="text-muted small">No page hits for this hour.</div>
+                            }
+                            else
+                            {
+                                <div class="hourly-section__content">
+                                    <TelerikGrid Data="@TopPagesRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                        <GridColumns>
+                                            <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Page" />
+                                            <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                                <Template Context="itemObj">
+                                                    @{ var row = (ItemHitRow)itemObj; }
+                                                    <div class="text-start">@row.Hits.ToString("N0")</div>
+                                                </Template>
+                                            </GridColumn>
+                                        </GridColumns>
+                                    </TelerikGrid>
+                                </div>
+                            }
+                        </TabStripTab>
+                        <TabStripTab Title="📄 Top Documents">
+                            @if (!TopDocumentsRows.Any())
+                            {
+                                <div class="text-muted small">No document hits for this hour.</div>
+                            }
+                            else
+                            {
+                                <div class="hourly-section__content">
+                                    <TelerikGrid Data="@TopDocumentsRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                        <GridColumns>
+                                            <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Document" />
+                                            <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                                <Template Context="itemObj">
+                                                    @{ var row = (ItemHitRow)itemObj; }
+                                                    <div class="text-start">@row.Hits.ToString("N0")</div>
+                                                </Template>
+                                            </GridColumn>
+                                        </GridColumns>
+                                    </TelerikGrid>
+                                </div>
+                            }
+                        </TabStripTab>
+                        <TabStripTab Title="🪟 Top Popups">
+                            @if (!TopPopupsRows.Any())
+                            {
+                                <div class="text-muted small">No popup hits for this hour.</div>
+                            }
+                            else
+                            {
+                                <div class="hourly-section__content">
+                                    <TelerikGrid Data="@TopPopupsRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                        <GridColumns>
+                                            <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Popup" />
+                                            <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                                <Template Context="itemObj">
+                                                    @{ var row = (ItemHitRow)itemObj; }
+                                                    <div class="text-start">@row.Hits.ToString("N0")</div>
+                                                </Template>
+                                            </GridColumn>
+                                        </GridColumns>
+                                    </TelerikGrid>
+                                </div>
+                            }
+                        </TabStripTab>
+            </TelerikTabStrip>
+
+        </WindowContent>
+    </TelerikWindow>
+}
+
+<style>
+    .popup-window {
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 22px 50px rgba(0, 0, 0, 0.18);
+    }
+
+    .popup-window :is(.k-window-titlebar, .k-dialog-titlebar) {
+        background: linear-gradient(120deg, var(--kendo-color-primary, #0d6efd), color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 40%, #0b1324));
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .popup-window .k-window-content {
+        background: color-mix(in srgb, var(--kendo-color-surface, #fff) 88%, var(--kendo-color-app-surface, #f5f5f5));
+        padding: 0.35rem;
+    }
+
+    .popup-tabs {
+        margin-top: 0.1rem;
+    }
+
+    .hourly-section__content {
+        padding: 0.45rem 0.1rem 0.2rem;
+    }
+</style>
+
+@code {
+    private int _pageSize = 10;
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public int SelectedHour { get; set; }
+
+    [Parameter]
+    public IISLogViewer.Services.LogReport? ReportData { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private const int MaxRows = 12;
+
+    private string SelectedHourLabel => SelectedHour.ToString("D2");
+
+    private List<ItemHitRow> TopPagesRows => MapRows(GetTopByHour(ReportData?.HourlyPageHits, SelectedHour));
+    private List<ItemHitRow> TopDocumentsRows => MapRows(GetTopByHour(ReportData?.HourlyDocumentHits, SelectedHour));
+    private List<ItemHitRow> TopPopupsRows => MapRows(GetTopByHour(ReportData?.HourlyPopupHits, SelectedHour));
+
+    private static IEnumerable<KeyValuePair<string, int>> GetTopByHour(
+        Dictionary<int, Dictionary<string, int>>? source,
+        int hour)
+    {
+        if (source == null || !source.TryGetValue(hour, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<string, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Take(MaxRows);
+    }
+
+    private static List<ItemHitRow> MapRows(IEnumerable<KeyValuePair<string, int>> source) =>
+        source.Select(x => new ItemHitRow(x.Key, x.Value)).ToList();
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private sealed record ItemHitRow(string Item, int Hits);
+}
+
+============================================================
+FILE: Components/Shared/LabelValueRow.cs
+============================================================
+namespace IISLogViewer.Components.Shared;
+
+public sealed record LabelValueRow(string Label, string ValueLabel);
+
+
+============================================================
+FILE: Components/Shared/LabelValueSection.razor
+============================================================
+@namespace IISLogViewer.Components.Shared
+
+<div class="grid-toolbar">
+    <div><h3>@Title</h3></div>
+    <TelerikTextBox Value="@SearchValue"
+                    ValueChanged="OnSearchValueChanged"
+                    Placeholder="@Placeholder"
+                    Width="260px"
+                    Size="@ThemeConstants.TextBox.Size.Small"
+                    FillMode="@ThemeConstants.TextBox.FillMode.Outline"
+                    DebounceDelay="250"
+                    ShowClearButton="true" />
+</div>
+
+@if (!Rows.Any())
+{
+    <div class="empty-state">No data found.</div>
+}
+else
+{
+    <TelerikGrid Data="@SortedRows"
+                 Pageable="true"
+                 @bind-PageSize="_pageSize"
+                 Sortable="false"
+                 Resizable="true"
+                 Size="@ThemeConstants.Grid.Size.Small">
+        <GridColumns>
+            <GridColumn Field="@nameof(LabelValueRow.Label)" Title="@LabelHeader">
+                <HeaderTemplate>
+                    <TelerikButton OnClick="() => ToggleSort(nameof(LabelValueRow.Label))"
+                                   FillMode="@ThemeConstants.Button.FillMode.Flat"
+                                   Size="@ThemeConstants.Button.Size.Small">
+                        @LabelHeader @SortGlyph(nameof(LabelValueRow.Label))
+                    </TelerikButton>
+                </HeaderTemplate>
+            </GridColumn>
+            <GridColumn Field="@nameof(LabelValueRow.ValueLabel)" Title="@ValueHeader" Width="140px">
+                <HeaderTemplate>
+                    <TelerikButton OnClick="() => ToggleSort(nameof(LabelValueRow.ValueLabel))"
+                                   FillMode="@ThemeConstants.Button.FillMode.Flat"
+                                   Size="@ThemeConstants.Button.Size.Small">
+                        @ValueHeader @SortGlyph(nameof(LabelValueRow.ValueLabel))
+                    </TelerikButton>
+                </HeaderTemplate>
+                <Template Context="itemObj">
+                    @{ var row = (LabelValueRow)itemObj; }
+                    <div class="text-start">@row.ValueLabel</div>
+                </Template>
+            </GridColumn>
+        </GridColumns>
+    </TelerikGrid>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Placeholder { get; set; } = "";
+    [Parameter] public string LabelHeader { get; set; } = "Label";
+    [Parameter] public string ValueHeader { get; set; } = "Hits";
+
+    [Parameter] public string SearchValue { get; set; } = "";
+    [Parameter] public EventCallback<string> SearchValueChanged { get; set; }
+
+    [Parameter] public IEnumerable<LabelValueRow> Rows { get; set; } = Array.Empty<LabelValueRow>();
+
+    private int _pageSize = 10;
+
+    private string _sortField = nameof(LabelValueRow.ValueLabel);
+    private bool _sortDesc = true;
+
+    private IEnumerable<LabelValueRow> SortedRows =>
+        Sort(Rows, _sortField, _sortDesc);
+
+    private async Task OnSearchValueChanged(string value)
+    {
+        await SearchValueChanged.InvokeAsync(value ?? "");
+    }
+
+    private void ToggleSort(string field)
+    {
+        if (_sortField == field)
+        {
+            _sortDesc = !_sortDesc;
+            return;
+        }
+
+        _sortField = field;
+        _sortDesc = true;
+    }
+
+    private string SortGlyph(string field) =>
+        _sortField == field ? (_sortDesc ? "▼" : "▲") : "";
+
+    private static IEnumerable<LabelValueRow> Sort(IEnumerable<LabelValueRow> rows, string field, bool desc)
+    {
+        Func<LabelValueRow, object> key = field switch
+        {
+            nameof(LabelValueRow.Label) => r => r.Label,
+            _ => r => ParseNumber(r.ValueLabel)
+        };
+        return desc ? rows.OrderByDescending(key) : rows.OrderBy(key);
+    }
+
+    private static int ParseNumber(string formatted) =>
+        int.TryParse(formatted.Replace(",", string.Empty), out var parsed) ? parsed : 0;
+
+}
+
+============================================================
+FILE: Components/Shared/Pager.razor
+============================================================
+@namespace IISLogViewer.Components.Shared
+
+@if (TotalPages > 1)
+{
+    <div class="d-flex align-items-center justify-content-between mt-2">
+        <small class="text-muted">Page @CurrentPage of @TotalPages</small>
+        <div class="d-flex gap-2">
+            <TelerikButton OnClick="() => ChangeTo(CurrentPage - 1)"
+                           Enabled="@(CurrentPage > 1)"
+                           Size="@ThemeConstants.Button.Size.Small"
+                           FillMode="@ThemeConstants.Button.FillMode.Outline">
+                Prev
+            </TelerikButton>
+            <TelerikButton OnClick="() => ChangeTo(CurrentPage + 1)"
+                           Enabled="@(CurrentPage < TotalPages)"
+                           Size="@ThemeConstants.Button.Size.Small"
+                           FillMode="@ThemeConstants.Button.FillMode.Outline">
+                Next
+            </TelerikButton>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public int TotalPages { get; set; } = 1;
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private async Task ChangeTo(int nextPage)
+    {
+        var page = Math.Clamp(nextPage, 1, Math.Max(1, TotalPages));
+        if (page == CurrentPage)
+            return;
+        await OnPageChanged.InvokeAsync(page);
+    }
+}
+
+============================================================
+FILE: Components/Shared/UserHitsDetailPopup.razor
+============================================================
+@if (IsOpen)
+{
+    <TelerikWindow Width="1320px"
+                   Height="700px"
+                   Visible="@IsOpen"
+                   Modal="true"
+                   Draggable="true"
+                   Resizable="true"
+                   Class="popup-window popup-window--user">
+        <WindowTitle>
+            User Details - @HeaderDisplayName
+        </WindowTitle>
+        <WindowActions>
+            <WindowAction Name="Close" />
+        </WindowActions>
+        <WindowContent>
+            <div class="text-muted small mb-2">@HeaderSubTitle</div>
+
+            @if (PeakHourSummary is not null)
+            {
+                <div class="user-peak-summary">
+                    Most Active Hour: <strong>@PeakHourSummary.HourLabel</strong>
+                    <span class="text-muted">(@PeakHourSummary.Hits.ToString("N0") hits, @PeakHourSummary.PercentageLabel)</span>
+                </div>
+            }
+
+            <TelerikTabStrip Class="popup-tabs">
+                <TabStripTab Title="🔥 Top Pages">
+                    @if (!TopPagesRows.Any())
+                    {
+                        <div class="text-muted small">No page hits for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@TopPagesRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Page" />
+                                    <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (ItemHitRow)itemObj; }
+                                            <div class="text-start">@row.Hits.ToString("N0")</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="📄 Top Documents">
+                    @if (!TopDocumentsRows.Any())
+                    {
+                        <div class="text-muted small">No document hits for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@TopDocumentsRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Document" />
+                                    <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (ItemHitRow)itemObj; }
+                                            <div class="text-start">@row.Hits.ToString("N0")</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="🪟 Top Popups">
+                    @if (!TopPopupsRows.Any())
+                    {
+                        <div class="text-muted small">No popup hits for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@TopPopupsRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Popup" />
+                                    <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (ItemHitRow)itemObj; }
+                                            <div class="text-start">@row.Hits.ToString("N0")</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="📅 Most Active Weekdays">
+                    @if (!WeekdayRows.Any())
+                    {
+                        <div class="text-muted small">No weekday activity for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@WeekdayRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(WeekdayRow.DayLabel)" Title="Day" Width="140px" />
+                                    <GridColumn Field="@nameof(WeekdayRow.HitsLabel)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (WeekdayRow)itemObj; }
+                                            <div class="text-start">@row.HitsLabel</div>
+                                        </Template>
+                                    </GridColumn>
+                                    <GridColumn Field="@nameof(WeekdayRow.PercentLabel)" Title="Percent" Width="120px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (WeekdayRow)itemObj; }
+                                            <div class="text-start">@row.PercentLabel</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="⏰ Most Active Hours">
+                    @if (!TopHoursRows.Any())
+                    {
+                        <div class="text-muted small">No hourly activity for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@TopHoursRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(HourHitRow.HourLabel)" Title="Hour" />
+                                    <GridColumn Field="@nameof(HourHitRow.Hits)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (HourHitRow)itemObj; }
+                                            <div class="text-start">@row.Hits.ToString("N0")</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="📊 Status Code Breakdown">
+                    @if (!TopStatusRows.Any())
+                    {
+                        <div class="text-muted small">No status code data for this user.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@TopStatusRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Status" />
+                                    <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                        <Template Context="itemObj">
+                                            @{ var row = (ItemHitRow)itemObj; }
+                                            <div class="text-start">@row.Hits.ToString("N0")</div>
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+                <TabStripTab Title="🧭 Timeline">
+                    <div class="user-timeline-toolbar">
+                        <TelerikDropDownList Data="@_timelineDateOptions"
+                                             TextField="@nameof(TimelineDateOption.Text)"
+                                             ValueField="@nameof(TimelineDateOption.Value)"
+                                             Value="@_selectedTimelineDateKey"
+                                             ValueChanged="@( (string value) => OnTimelineDateChanged(value) )"
+                                             DefaultText="Select date"
+                                             Width="190px"
+                                             Size="@ThemeConstants.DropDownList.Size.Small"
+                                             FillMode="@ThemeConstants.DropDownList.FillMode.Outline" />
+                    </div>
+
+                    @if (_timelineLoading)
+                    {
+                        <div class="loading-state">
+                            <TelerikLoader Size="@ThemeConstants.Loader.Size.Medium" Type="@LoaderType.InfiniteSpinner" />
+                            <span>Loading timeline...</span>
+                        </div>
+                    }
+                    else if (!_timelineRows.Any())
+                    {
+                        <div class="text-muted small">No timeline events for this user and date.</div>
+                    }
+                    else
+                    {
+                        <div class="user-section__content">
+                            <TelerikGrid Data="@_timelineRows" Pageable="true" @bind-PageSize="_gridPageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(UserTimelineRow.TimeLabel)" Title="Time" Width="120px" />
+                                    <GridColumn Field="@nameof(UserTimelineRow.Action)" Title="Action" />
+                                    <GridColumn Field="@nameof(UserTimelineRow.EventType)" Title="Type" Width="100px" />
+                                    <GridColumn Field="@nameof(UserTimelineRow.StatusLabel)" Title="Status" Width="95px" />
+                                    <GridColumn Field="@nameof(UserTimelineRow.DurationLabel)" Title="Duration" Width="120px" />
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+                    }
+                </TabStripTab>
+            </TelerikTabStrip>
+
+        </WindowContent>
+    </TelerikWindow>
+}
+
+<style>
+    .popup-window {
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 22px 50px rgba(0, 0, 0, 0.18);
+    }
+
+    .popup-window :is(.k-window-titlebar, .k-dialog-titlebar) {
+        background: linear-gradient(120deg, var(--kendo-color-primary, #0d6efd), color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 40%, #0b1324));
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .popup-window .k-window-content {
+        background: color-mix(in srgb, var(--kendo-color-surface, #fff) 88%, var(--kendo-color-app-surface, #f5f5f5));
+        padding: 0.35rem;
+    }
+
+    .user-peak-summary {
+        margin-bottom: 0.55rem;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid var(--kendo-color-border, #d4d4d4);
+        border-radius: 10px;
+        background: linear-gradient(120deg, color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 10%, #fff), #fff);
+        font-size: 0.9rem;
+    }
+
+    .popup-tabs {
+        margin-top: 0.1rem;
+    }
+
+    .user-timeline-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 0.45rem;
+    }
+
+    .loading-state {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        color: var(--kendo-color-subtle, #666);
+        padding: 0.35rem 0.1rem;
+    }
+
+    .user-section__content {
+        padding: 0.45rem 0.1rem 0.2rem;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public string SelectedUser { get; set; } = "";
+
+    [Parameter]
+    public string SelectedUserDisplayName { get; set; } = "";
+
+    [Parameter]
+    public IEnumerable<DateTime>? SelectedDays { get; set; }
+
+    [Parameter]
+    public IISLogViewer.Services.LogReport? ReportData { get; set; }
+
+    [Inject]
+    public IISLogViewer.Services.LogParserService LogParserService { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private string _timelineUserSeed = "";
+    private string _timelineSelectionSeed = "";
+    private string _selectedTimelineDateKey = "";
+    private List<TimelineDateOption> _timelineDateOptions = new();
+    private List<UserTimelineRow> _timelineRows = new();
+    private bool _timelineLoading;
+    private int _gridPageSize = 10;
+
+    private const int MaxRows = 12;
+
+    private IISLogViewer.Services.UserProfile? SelectedProfile =>
+        string.IsNullOrWhiteSpace(SelectedUser) ? null : LogParserService.GetUserProfile(SelectedUser);
+
+    private string HeaderDisplayName =>
+        string.IsNullOrWhiteSpace(SelectedUserDisplayName) ? SelectedUser : SelectedUserDisplayName;
+
+    private string HeaderSubTitle
+    {
+        get
+        {
+            var parts = new List<string> { SelectedUser };
+            if (!string.IsNullOrWhiteSpace(SelectedProfile?.Department))
+                parts.Add(SelectedProfile.Department);
+            if (!string.IsNullOrWhiteSpace(SelectedProfile?.Email))
+                parts.Add(SelectedProfile.Email);
+            return string.Join(" | ", parts.Where(x => !string.IsNullOrWhiteSpace(x)));
+        }
+    }
+
+    private List<ItemHitRow> TopPagesRows => MapRows(GetTopByUser(ReportData?.UserPageHits, SelectedUser));
+    private List<ItemHitRow> TopDocumentsRows => MapRows(GetTopByUser(ReportData?.UserDocumentHits, SelectedUser));
+    private List<ItemHitRow> TopPopupsRows => MapRows(GetTopByUser(ReportData?.UserPopupHits, SelectedUser));
+    private List<ItemHitRow> TopStatusRows => GetTopStatusByUser(ReportData?.UserStatusHits, SelectedUser)
+        .Select(item => new ItemHitRow(IISLogViewer.Services.LogParserService.GetStatusDisplay(item.Key), item.Value))
+        .ToList();
+    private List<HourHitRow> TopHoursRows => GetTopHoursByUser(ReportData?.UserHourlyHits, SelectedUser)
+        .Select(item => new HourHitRow($"{item.Key:D2}:00-{item.Key:D2}:59", item.Value))
+        .ToList();
+
+    private PeakHourInfo? PeakHourSummary => BuildPeakHour(ReportData?.UserHourlyHits, SelectedUser, SelectedUserTotalHits);
+
+    private int SelectedUserTotalHits => ReportData?.UserHits.TryGetValue(SelectedUser, out var hits) == true ? hits : 0;
+
+    private List<WeekdayRow> WeekdayRows => BuildWeekdayRows(ReportData?.UserWeekdayHits, SelectedUser, SelectedUserTotalHits).ToList();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var currentSelectionSeed = BuildSelectionSeed(SelectedDays);
+
+        if (!IsOpen || string.IsNullOrWhiteSpace(SelectedUser))
+        {
+            _timelineUserSeed = "";
+            _timelineSelectionSeed = "";
+            _selectedTimelineDateKey = "";
+            _timelineDateOptions = new List<TimelineDateOption>();
+            _timelineRows = new List<UserTimelineRow>();
+            return;
+        }
+
+        if (string.Equals(_timelineUserSeed, SelectedUser, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(_timelineSelectionSeed, currentSelectionSeed, StringComparison.Ordinal) &&
+            _timelineDateOptions.Count > 0)
+            return;
+
+        _timelineUserSeed = SelectedUser;
+        _timelineSelectionSeed = currentSelectionSeed;
+        await RefreshTimelineDatesAsync();
+    }
+
+    private async Task RefreshTimelineDatesAsync()
+    {
+        var dates = await LogParserService.GetTimelineDatesForUser(SelectedUser);
+
+        var selectedDaySet = SelectedDays?
+            .Select(d => d.Date)
+            .ToHashSet() ?? new HashSet<DateTime>();
+
+        if (selectedDaySet.Count > 0)
+            dates = dates.Where(d => selectedDaySet.Contains(d.Date)).ToList();
+
+        _timelineDateOptions = dates
+            .Select(d => new TimelineDateOption(d.ToString("dd MMM yyyy"), d.ToString("yyyy-MM-dd")))
+            .ToList();
+
+        _selectedTimelineDateKey = _timelineDateOptions.FirstOrDefault()?.Value ?? string.Empty;
+        await LoadTimelineAsync();
+    }
+
+    private async Task OnTimelineDateChanged(string value)
+    {
+        _selectedTimelineDateKey = value ?? string.Empty;
+        await LoadTimelineAsync();
+    }
+
+    private async Task LoadTimelineAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedUser) ||
+            string.IsNullOrWhiteSpace(_selectedTimelineDateKey) ||
+            !DateTime.TryParse(_selectedTimelineDateKey, out var selectedDate))
+        {
+            _timelineRows = new List<UserTimelineRow>();
+            return;
+        }
+
+        _timelineLoading = true;
+        try
+        {
+            var events = await LogParserService.ParseTimelineDayForUser(selectedDate.Date, SelectedUser);
+            _timelineRows = events
+                .OrderBy(e => e.TimestampLocal)
+                .Select(e => new UserTimelineRow(
+                    e.TimestampLocal.ToString("HH:mm:ss"),
+                    e.Action,
+                    e.EventType,
+                    e.StatusCode > 0 ? e.StatusCode.ToString() : "-",
+                    e.DurationMs > 0 ? $"{e.DurationMs:N0} ms" : "-"))
+                .ToList();
+        }
+        finally
+        {
+            _timelineLoading = false;
+        }
+    }
+
+    private static IEnumerable<KeyValuePair<string, int>> GetTopByUser(
+        Dictionary<string, Dictionary<string, int>>? source,
+        string user)
+    {
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<string, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Take(MaxRows);
+    }
+
+    private static IEnumerable<KeyValuePair<int, int>> GetTopStatusByUser(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user)
+    {
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<int, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key)
+            .Take(MaxRows);
+    }
+
+    private static IEnumerable<KeyValuePair<int, int>> GetTopHoursByUser(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user)
+    {
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<int, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key)
+            .Take(MaxRows);
+    }
+
+    private static PeakHourInfo? BuildPeakHour(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user,
+        int totalHits)
+    {
+        if (totalHits <= 0)
+            return null;
+
+        if (source == null || string.IsNullOrWhiteSpace(user) || !source.TryGetValue(user, out var bucket) || bucket.Count == 0)
+            return null;
+
+        var peak = bucket
+            .OrderByDescending(x => x.Value)
+            .ThenByDescending(x => x.Key)
+            .First();
+
+        if (peak.Value <= 0)
+            return null;
+
+        var percent = (peak.Value * 100.0) / totalHits;
+        return new PeakHourInfo($"{peak.Key:D2}:00-{peak.Key:D2}:59", peak.Value, $"{percent:F1}% of user traffic");
+    }
+
+    private static IEnumerable<WeekdayRow> BuildWeekdayRows(
+        Dictionary<string, Dictionary<int, int>>? source,
+        string user,
+        int totalHits)
+    {
+        var weekdayOrder = new[]
+        {
+            DayOfWeek.Monday,
+            DayOfWeek.Tuesday,
+            DayOfWeek.Wednesday,
+            DayOfWeek.Thursday,
+            DayOfWeek.Friday,
+            DayOfWeek.Saturday,
+            DayOfWeek.Sunday
+        };
+
+        var bucket = (source != null && !string.IsNullOrWhiteSpace(user) && source.TryGetValue(user, out var found))
+            ? found
+            : new Dictionary<int, int>();
+
+        foreach (var day in weekdayOrder)
+        {
+            var key = (int)day;
+            var hits = bucket.TryGetValue(key, out var value) ? value : 0;
+            var pct = totalHits > 0 ? (hits * 100.0) / totalHits : 0;
+            yield return new WeekdayRow(day.ToString()[..3], hits.ToString("N0"), $"{pct:F1}%");
+        }
+    }
+
+    private static List<ItemHitRow> MapRows(IEnumerable<KeyValuePair<string, int>> source) =>
+        source.Select(x => new ItemHitRow(x.Key, x.Value)).ToList();
+
+    private static string BuildSelectionSeed(IEnumerable<DateTime>? selectedDays)
+    {
+        if (selectedDays == null)
+            return string.Empty;
+
+        return string.Join("|", selectedDays
+            .Select(d => d.Date)
+            .Distinct()
+            .OrderBy(d => d)
+            .Select(d => d.ToString("yyyy-MM-dd")));
+    }
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private sealed record ItemHitRow(string Item, int Hits);
+    private sealed record HourHitRow(string HourLabel, int Hits);
+    private sealed record PeakHourInfo(string HourLabel, int Hits, string PercentageLabel);
+    private sealed record WeekdayRow(string DayLabel, string HitsLabel, string PercentLabel);
+    private sealed record TimelineDateOption(string Text, string Value);
+    private sealed record UserTimelineRow(string TimeLabel, string Action, string EventType, string StatusLabel, string DurationLabel);
+}
+
+============================================================
+FILE: Components/Shared/WeekdayDetailPopup.razor
+============================================================
+@inject IISLogViewer.Services.LogParserService LogParserService
+
+@if (IsOpen)
+{
+    <TelerikWindow Width="1020px"
+                   Height="680px"
+                   Visible="@IsOpen"
+                   Modal="true"
+                   Draggable="true"
+                   Resizable="true"
+                   Class="popup-window popup-window--weekday">
+        <WindowTitle>
+            Weekday Details - @SelectedWeekdayLabel
+        </WindowTitle>
+        <WindowActions>
+            <WindowAction Name="Close" />
+        </WindowActions>
+        <WindowContent>
+            <TelerikTabStrip Class="popup-tabs">
+                        <TabStripTab Title="🔥 Top Pages">
+                            @if (!TopPagesRows.Any())
+                            {
+                                <div class="text-muted small">No page hits for this day.</div>
+                            }
+                            else
+                            {
+                                <div class="weekday-section__content">
+                                    <TelerikGrid Data="@TopPagesRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                        <GridColumns>
+                                            <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Page" />
+                                            <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                                <Template Context="itemObj">
+                                                    @{ var row = (ItemHitRow)itemObj; }
+                                                    <div class="text-start">@row.Hits.ToString("N0")</div>
+                                                </Template>
+                                            </GridColumn>
+                                        </GridColumns>
+                                    </TelerikGrid>
+                                </div>
+                            }
+                        </TabStripTab>
+                        <TabStripTab Title="📄 Top Documents">
+                            @if (!TopDocumentsRows.Any())
+                            {
+                                <div class="text-muted small">No document hits for this day.</div>
+                            }
+                            else
+                            {
+                                <div class="weekday-section__content">
+                                    <TelerikGrid Data="@TopDocumentsRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                        <GridColumns>
+                                            <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Document" />
+                                            <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                                <Template Context="itemObj">
+                                                    @{ var row = (ItemHitRow)itemObj; }
+                                                    <div class="text-start">@row.Hits.ToString("N0")</div>
+                                                </Template>
+                                            </GridColumn>
+                                        </GridColumns>
+                                    </TelerikGrid>
+                                </div>
+                            }
+                        </TabStripTab>
+                        <TabStripTab Title="🪟 Top Popups">
+                            @if (!TopPopupsRows.Any())
+                            {
+                                <div class="text-muted small">No popup hits for this day.</div>
+                            }
+                            else
+                            {
+                                <div class="weekday-section__content">
+                                    <TelerikGrid Data="@TopPopupsRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                        <GridColumns>
+                                            <GridColumn Field="@nameof(ItemHitRow.Item)" Title="Popup" />
+                                            <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                                <Template Context="itemObj">
+                                                    @{ var row = (ItemHitRow)itemObj; }
+                                                    <div class="text-start">@row.Hits.ToString("N0")</div>
+                                                </Template>
+                                            </GridColumn>
+                                        </GridColumns>
+                                    </TelerikGrid>
+                                </div>
+                            }
+                        </TabStripTab>
+                        <TabStripTab Title="👤 Most Active Users">
+                            @if (!TopUsersRows.Any())
+                            {
+                                <div class="text-muted small">No user hits for this day.</div>
+                            }
+                            else
+                            {
+                                <div class="weekday-section__content">
+                                    <TelerikGrid Data="@TopUsersRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                        <GridColumns>
+                                            <GridColumn Field="@nameof(ItemHitRow.Item)" Title="User" />
+                                            <GridColumn Field="@nameof(ItemHitRow.Hits)" Title="Hits" Width="110px">
+                                                <Template Context="itemObj">
+                                                    @{ var row = (ItemHitRow)itemObj; }
+                                                    <div class="text-start">@row.Hits.ToString("N0")</div>
+                                                </Template>
+                                            </GridColumn>
+                                        </GridColumns>
+                                    </TelerikGrid>
+                                </div>
+                            }
+                        </TabStripTab>
+                        <TabStripTab Title="⏰ Most Active Hours">
+                            @if (!TopHoursRows.Any())
+                            {
+                                <div class="text-muted small">No hourly hits for this day.</div>
+                            }
+                            else
+                            {
+                                <div class="weekday-section__content">
+                                    <TelerikGrid Data="@TopHoursRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                                        <GridColumns>
+                                            <GridColumn Field="@nameof(HourHitRow.HourLabel)" Title="Hour" />
+                                            <GridColumn Field="@nameof(HourHitRow.Hits)" Title="Hits" Width="110px">
+                                                <Template Context="itemObj">
+                                                    @{ var row = (HourHitRow)itemObj; }
+                                                    <div class="text-start">@row.Hits.ToString("N0")</div>
+                                                </Template>
+                                            </GridColumn>
+                                        </GridColumns>
+                                    </TelerikGrid>
+                                </div>
+                            }
+                        </TabStripTab>
+            </TelerikTabStrip>
+
+        </WindowContent>
+    </TelerikWindow>
+}
+
+<style>
+    .popup-window {
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 22px 50px rgba(0, 0, 0, 0.18);
+    }
+
+    .popup-window :is(.k-window-titlebar, .k-dialog-titlebar) {
+        background: linear-gradient(120deg, var(--kendo-color-primary, #0d6efd), color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 40%, #0b1324));
+        color: #fff;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .popup-window .k-window-content {
+        background: color-mix(in srgb, var(--kendo-color-surface, #fff) 88%, var(--kendo-color-app-surface, #f5f5f5));
+        padding: 0.35rem;
+    }
+
+    .popup-tabs {
+        margin-top: 0.1rem;
+    }
+
+    .weekday-section__content {
+        padding: 0.45rem 0.1rem 0.2rem;
+    }
+</style>
+
+@code {
+    private int _pageSize = 10;
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public int SelectedWeekday { get; set; }
+
+    [Parameter]
+    public IISLogViewer.Services.LogReport? ReportData { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private const int MaxRows = 12;
+
+    private string SelectedWeekdayLabel => DayLabel(SelectedWeekday);
+
+    private List<ItemHitRow> TopPagesRows => MapRows(GetTopByWeekday(ReportData?.WeekdayPageHits, SelectedWeekday));
+    private List<ItemHitRow> TopPopupsRows => MapRows(GetTopByWeekday(ReportData?.WeekdayPopupHits, SelectedWeekday));
+    private List<ItemHitRow> TopDocumentsRows => MapRows(GetTopByWeekday(ReportData?.WeekdayDocumentHits, SelectedWeekday));
+    private List<ItemHitRow> TopUsersRows => MapRows(GetTopUsersByWeekday(ReportData?.WeekdayUserHits, SelectedWeekday));
+    private List<HourHitRow> TopHoursRows => GetTopHoursByWeekday(ReportData?.WeekdayHourHits, SelectedWeekday)
+        .Select(x => new HourHitRow($"{x.Key:D2}:00-{x.Key:D2}:59", x.Value))
+        .ToList();
+
+    private static IEnumerable<KeyValuePair<string, int>> GetTopByWeekday(
+        Dictionary<int, Dictionary<string, int>>? source,
+        int weekday)
+    {
+        if (source == null || !source.TryGetValue(weekday, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<string, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Take(MaxRows);
+    }
+
+    private IEnumerable<KeyValuePair<string, int>> GetTopUsersByWeekday(
+        Dictionary<int, Dictionary<string, int>>? source,
+        int weekday)
+    {
+        if (source == null || !source.TryGetValue(weekday, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<string, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+            .Take(MaxRows)
+            .Select(item =>
+            {
+                var displayName = LogParserService.GetUserDisplayName(item.Key);
+                var label = string.Equals(displayName, item.Key, StringComparison.OrdinalIgnoreCase)
+                    ? item.Key
+                    : $"{displayName} ({item.Key})";
+                return new KeyValuePair<string, int>(label, item.Value);
+            });
+    }
+
+    private static IEnumerable<KeyValuePair<int, int>> GetTopHoursByWeekday(
+        Dictionary<int, Dictionary<int, int>>? source,
+        int weekday)
+    {
+        if (source == null || !source.TryGetValue(weekday, out var bucket) || bucket.Count == 0)
+            return Enumerable.Empty<KeyValuePair<int, int>>();
+
+        return bucket
+            .OrderByDescending(x => x.Value)
+            .ThenBy(x => x.Key)
+            .Take(MaxRows);
+    }
+
+    private static string DayLabel(int dayIndex)
+    {
+        if (dayIndex is < 0 or > 6)
+            return $"Day {dayIndex}";
+
+        return ((DayOfWeek)dayIndex).ToString();
+    }
+
+    private static List<ItemHitRow> MapRows(IEnumerable<KeyValuePair<string, int>> source) =>
+        source.Select(x => new ItemHitRow(x.Key, x.Value)).ToList();
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private sealed record ItemHitRow(string Item, int Hits);
+    private sealed record HourHitRow(string HourLabel, int Hits);
+}
+
+============================================================
+FILE: Program.cs
+============================================================
+using Microsoft.AspNetCore.Components.Web;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+builder.Services.AddTelerikBlazor();
+builder.Services.AddScoped<IISLogViewer.Services.SelectionState>();
+
+var logRoot = builder.Configuration["LogViewer:RootDirectory"];
+var timeZoneId = builder.Configuration["LogViewer:TimeZoneId"];
+var userCsvPath = builder.Configuration["LogViewer:UserCsvPath"];
+if (string.IsNullOrWhiteSpace(logRoot))
+{
+    logRoot = Path.Combine(Directory.GetCurrentDirectory(), "LogFiles");
+}
+
+builder.Services.AddScoped(_ => new IISLogViewer.Services.LogParserService(logRoot, timeZoneId, userCsvPath));
+
+var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseAntiforgery();
+
+app.MapRazorComponents<IISLogViewer.Components.App>()
+    .AddInteractiveServerRenderMode();
+
+app.Run();
+
+============================================================
+FILE: Services/DnnMappings.cs
+============================================================
+namespace IISLogViewer.Services
+{
+    public static class DnnMappings
+    {
+        public static readonly Dictionary<int, string> Tabs = new()
+        {
+            { 16, "Test Software" },
+            { 23, "SCM Requests" },
+            { 30, "Viewer Tools" },
+            { 35, "Third Party SW" },
+            { 41, "Programmed LRUs and PWAs" },
+            { 42, "SW Assignment" },
+            { 44, "Media" },
+            { 47, "Release Tools" },
+            { 51, "PDIs" },
+        };
+
+        public static readonly Dictionary<int, string> Modules = new()
+        {
+            { 57,  "System Viewer" },
+            { 113, "Report Generator" },
+            { 162, "Find Package" },
+            { 172, "SCM Requests Queue" },
+            { 183, "Media Request" },
+            { 219, "CSCI Viewer" },
+            { 223, "Software Requests" },
+            { 224, "Software Inventory" },
+            { 233, "Default P" },
+            { 234, "Default P" },
+            { 245, "CSCI Release Tool" },
+            { 250, "System Release Tool" },
+            { 273, "Perishable Data Item (PDI) Catalog" },
+        };
+
+        public static readonly Dictionary<int, string> PopupControlTypes = new()
+        {
+            { 1,  "Add Customer" },
+            { 2,  "Add Software" },
+            { 3,  "Add PDI" },
+            { 4,  "Add LRU/PWA" },
+            { 5,  "Add CSCI" },
+            { 6,  "Add System" },
+            { 7,  "Add Test Package" }
+
+        };
+
+        // Extensions to ignore completely
+        public static readonly HashSet<string> IgnoredExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".axd", ".css", ".js", ".png", ".jpg", ".jpeg", ".gif",
+            ".ico", ".woff", ".woff2", ".ttf", ".eot", ".svg", ".map"
+        };
+
+        // Extensions that get their own special section
+        public static readonly HashSet<string> DocumentExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".pdf", ".exe", ".doc", ".docx"
+        };
+    }
+}
+============================================================
+FILE: Services/LogParserService.cs
+============================================================
+namespace IISLogViewer.Services
+{
+    public class LogEntry
+    {
+        public DateTime DateTime { get; set; }
+        public string ServerIp { get; set; } = "";
+        public string Method { get; set; } = "";
+        public string UriStem { get; set; } = "";
+        public string UriQuery { get; set; } = "";
+        public string ClientIp { get; set; } = "";
+        public string UserAgent { get; set; } = "";
+        public int StatusCode { get; set; }
+        public int TimeTaken { get; set; }
+
+        // Parsed extras
+        public int? TabId { get; set; }
+        public int? ModuleId { get; set; }
+        public int? PopupControlType { get; set; }
+        public string? TabName { get; set; }
+        public string? ModuleName { get; set; }
+        public string EntryType { get; set; } = "Page"; // Page, Document, Ignored
+        public string FileExtension { get; set; } = "";
+    }
+
+    public class LogReport
+    {
+        public int TotalHits { get; set; }
+        public Dictionary<string, int> PageHits { get; set; } = new();
+        public Dictionary<string, int> PageEntryHits { get; set; } = new();
+        public Dictionary<string, Dictionary<string, int>> PageNextPageHits { get; set; } = new();
+        public Dictionary<string, int> TabHits { get; set; } = new();
+        public Dictionary<string, int> ModuleHits { get; set; } = new();
+        public Dictionary<string, int> PopupHits { get; set; } = new();
+        public Dictionary<string, int> DocumentHits { get; set; } = new();
+        public Dictionary<string, int> DocumentAvgTime { get; set; } = new();
+        public Dictionary<string, int> TopIPs { get; set; } = new();
+        public Dictionary<string, int> ErrorPages { get; set; } = new();
+        public Dictionary<int, int> StatusCodes { get; set; } = new();
+        public Dictionary<string, int> SlowPages { get; set; } = new();
+        public Dictionary<int, int> HourlyHits { get; set; } = new();
+        public Dictionary<int, Dictionary<string, int>> HourlyPageHits { get; set; } = new();
+        public Dictionary<int, Dictionary<string, int>> HourlyDocumentHits { get; set; } = new();
+        public Dictionary<int, Dictionary<string, int>> HourlyPopupHits { get; set; } = new();
+        public Dictionary<int, int> WeekdayHits { get; set; } = new();
+        public Dictionary<int, Dictionary<string, int>> WeekdayPageHits { get; set; } = new();
+        public Dictionary<int, Dictionary<string, int>> WeekdayUserHits { get; set; } = new();
+        public Dictionary<int, Dictionary<string, int>> WeekdayPopupHits { get; set; } = new();
+        public Dictionary<int, Dictionary<string, int>> WeekdayDocumentHits { get; set; } = new();
+        public Dictionary<int, Dictionary<int, int>> WeekdayHourHits { get; set; } = new();
+        public Dictionary<string, int> UserHits { get; set; } = new();
+        public Dictionary<string, Dictionary<string, int>> UserPageHits { get; set; } = new();
+        public Dictionary<string, Dictionary<string, int>> UserDocumentHits { get; set; } = new();
+        public Dictionary<string, Dictionary<string, int>> UserPopupHits { get; set; } = new();
+        public Dictionary<string, Dictionary<int, int>> UserStatusHits { get; set; } = new();
+        public Dictionary<string, Dictionary<int, int>> UserHourlyHits { get; set; } = new();
+        public Dictionary<string, Dictionary<int, int>> UserWeekdayHits { get; set; } = new();
+    }
+
+    public class TimelineEvent
+    {
+        public DateTime TimestampLocal { get; set; }
+        public string UserName { get; set; } = "Anonymous";
+        public string Action { get; set; } = "";
+        public string EventType { get; set; } = "Page";
+        public int StatusCode { get; set; }
+        public int DurationMs { get; set; }
+    }
+
+    public class UserProfile
+    {
+        public string LoginName { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Department { get; set; } = "";
+    }
+
+    public class LogParserService
+    {
+        private static readonly IReadOnlyDictionary<int, string> StatusLabels =
+            new Dictionary<int, string>
+            {
+                [100] = "Continue",
+                [101] = "Switching Protocols",
+                [200] = "OK",
+                [201] = "Created",
+                [202] = "Accepted",
+                [204] = "No Content",
+                [301] = "Moved Permanently",
+                [302] = "Found",
+                [304] = "Not Modified",
+                [307] = "Temporary Redirect",
+                [308] = "Permanent Redirect",
+                [400] = "Bad Request",
+                [401] = "Unauthorized",
+                [403] = "Forbidden",
+                [404] = "Not Found",
+                [405] = "Method Not Allowed",
+                [408] = "Request Timeout",
+                [409] = "Conflict",
+                [410] = "Gone",
+                [429] = "Too Many Requests",
+                [500] = "Internal Server Error",
+                [501] = "Not Implemented",
+                [502] = "Bad Gateway",
+                [503] = "Service Unavailable",
+                [504] = "Gateway Timeout"
+            };
+
+        private string _logDirectory;
+        private readonly string _rootDirectory;
+        private readonly TimeZoneInfo _targetTimeZone;
+        private readonly Dictionary<string, UserProfile> _userProfiles;
+
+        public string TargetTimeZoneId => _targetTimeZone.Id;
+        
+        // Caches for expensive operations
+        private Dictionary<int, Dictionary<int, List<DateTime>>>? _cachedTree;
+        private string _cachedTreeFolder = "";
+        private LogReport? _cachedAllReport;
+        private string _cachedAllFolder = "";
+
+        public LogParserService(string rootDirectory, string? timeZoneId = null, string? userCsvPath = null)
+        {
+            _rootDirectory = rootDirectory;
+            _logDirectory = rootDirectory;
+            _targetTimeZone = ResolveTimeZone(timeZoneId);
+            _userProfiles = LoadUserProfiles(userCsvPath);
+        }
+
+    public string CurrentFolder => _logDirectory;
+
+    public List<string> GetAvailableFolders()
+    {
+        var folders = new List<string>();
+        folders.Add(_rootDirectory); // root itself
+
+        foreach (var dir in Directory.GetDirectories(_rootDirectory, "*", SearchOption.AllDirectories))
+            folders.Add(dir);
+
+        return folders;
+    }
+
+    public string GetFolderDisplayName(string path)
+    {
+        return path == _rootDirectory ? "All Logs (Root)" : Path.GetFileName(path);
+    }
+
+    public void SetFolder(string path)
+    {
+        _logDirectory = path;
+    }
+    
+    public void ClearCache()
+    {
+        _cachedTree = null;
+        _cachedAllReport = null;
+    }
+
+    public UserProfile? GetUserProfile(string loginName)
+    {
+        if (string.IsNullOrWhiteSpace(loginName))
+            return null;
+
+        _userProfiles.TryGetValue(loginName, out var profile);
+        return profile;
+    }
+
+    public string GetUserDisplayName(string loginName)
+    {
+        var profile = GetUserProfile(loginName);
+        if (profile == null)
+            return loginName;
+
+        return string.IsNullOrWhiteSpace(profile.Name) ? loginName : profile.Name;
+    }
+
+    public static string GetStatusLabel(int statusCode)
+    {
+        return StatusLabels.TryGetValue(statusCode, out var label)
+            ? label
+            : "Unknown";
+    }
+
+    public static string GetStatusDisplay(int statusCode)
+    {
+        return $"{statusCode} - {GetStatusLabel(statusCode)}";
+    }
+    
+        public Dictionary<int, Dictionary<int, List<DateTime>>> GetLogTree()
+        {
+            if (_cachedTree != null && _cachedTreeFolder == _logDirectory)
+                return _cachedTree;
+
+            var tree = new Dictionary<int, Dictionary<int, List<DateTime>>>();
+            var files = Directory.GetFiles(_logDirectory, "*.log", SearchOption.AllDirectories);
+
+            foreach (var file in files)
+            {
+                var date = ExtractDateFromFilename(Path.GetFileName(file));
+                if (date == null) continue;
+
+                var year = date.Value.Year;
+                var month = date.Value.Month;
+
+                if (!tree.ContainsKey(year))
+                    tree[year] = new Dictionary<int, List<DateTime>>();
+                if (!tree[year].ContainsKey(month))
+                    tree[year][month] = new List<DateTime>();
+
+                if (!tree[year][month].Contains(date.Value))
+                    tree[year][month].Add(date.Value);
+            }
+            
+            _cachedTreeFolder = _logDirectory;
+            _cachedTree = tree;
+            return tree;
+        }
+
+        public async Task<LogReport> ParseFile(DateTime date)
+        {
+            var filename = $"u_ex{date:yyMMdd}.log";
+            var files = Directory.GetFiles(_logDirectory, filename, SearchOption.AllDirectories);
+            return await ParseFiles(files);
+        }
+
+        public async Task<LogReport> ParseMonth(int year, int month)
+        {
+            var allFiles = Directory.GetFiles(_logDirectory, "*.log", SearchOption.AllDirectories);
+            var files = allFiles.Where(f =>
+            {
+                var date = ExtractDateFromFilename(Path.GetFileName(f));
+                return date.HasValue && date.Value.Year == year && date.Value.Month == month;
+            });
+            return await ParseFiles(files);
+        }
+
+        public async Task<LogReport> ParseYear(int year)
+        {
+            var allFiles = Directory.GetFiles(_logDirectory, "*.log", SearchOption.AllDirectories);
+            var files = allFiles.Where(f =>
+            {
+                var date = ExtractDateFromFilename(Path.GetFileName(f));
+                return date.HasValue && date.Value.Year == year;
+            });
+            return await ParseFiles(files);
+        }
+
+        public async Task<LogReport> ParseAll()
+        {
+            if (_cachedAllReport != null && _cachedAllFolder == _logDirectory)
+                return _cachedAllReport;
+
+            var files = Directory.GetFiles(_logDirectory, "u_ex*.log", SearchOption.AllDirectories);
+            var report = await ParseFiles(files);
+            
+            _cachedAllFolder = _logDirectory;
+            _cachedAllReport = report;
+            return report;
+        }
+
+        public async Task<LogReport> ParseDates(List<DateTime> dates)
+        {
+            var allFiles = Directory.GetFiles(_logDirectory, "*.log", SearchOption.AllDirectories);
+            var files = allFiles.Where(f =>
+            {
+                var date = ExtractDateFromFilename(Path.GetFileName(f));
+                return date.HasValue && dates.Any(d => d.Date == date.Value.Date);
+            });
+            return await ParseFiles(files);
+        }
+
+        public async Task<List<TimelineEvent>> ParseTimelineDay(DateTime date)
+        {
+            var filename = $"u_ex{date:yyMMdd}.log";
+            var files = Directory.GetFiles(_logDirectory, filename, SearchOption.AllDirectories);
+            if (files.Length == 0)
+                return new List<TimelineEvent>();
+
+            var tasks = files.Select(path => Task.Run(() => ParseTimelineSingleFile(path, date.Date)));
+            var chunks = await Task.WhenAll(tasks);
+
+            return chunks
+                .SelectMany(x => x)
+                .OrderBy(x => x.TimestampLocal)
+                .ThenBy(x => x.UserName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        public async Task<List<TimelineEvent>> ParseTimelineDayForUser(DateTime date, string userName)
+        {
+            if (string.IsNullOrWhiteSpace(userName))
+                return new List<TimelineEvent>();
+
+            var normalizedUser = NormalizeUserName(userName);
+            var allEvents = await ParseTimelineDay(date);
+
+            return allEvents
+                .Where(e => string.Equals(e.UserName, normalizedUser, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(e => e.TimestampLocal)
+                .ToList();
+        }
+
+        public Task<List<string>> GetTimelineUsers()
+        {
+            var users = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var files = Directory.GetFiles(_logDirectory, "u_ex*.log", SearchOption.AllDirectories);
+
+            foreach (var path in files)
+            {
+                try
+                {
+                    string[] fields = Array.Empty<string>();
+                    using var reader = new StreamReader(path);
+                    string? line;
+
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        if (line.StartsWith("#Fields:"))
+                        {
+                            fields = line.Substring(9).Trim().Split(' ');
+                            continue;
+                        }
+
+                        if (line.StartsWith("#") || string.IsNullOrWhiteSpace(line) || fields.Length == 0)
+                            continue;
+
+                        var parts = line.Split(' ');
+                        if (parts.Length != fields.Length)
+                            continue;
+
+                        var fieldMap = fields.Select((f, i) => new { f, i })
+                                            .ToDictionary(x => x.f, x => parts[x.i]);
+
+                        if (!fieldMap.TryGetValue("cs-username", out var rawUser))
+                            continue;
+
+                        var user = NormalizeUserName(rawUser);
+                        if (!string.IsNullOrWhiteSpace(user) && !string.Equals(user, "Anonymous", StringComparison.OrdinalIgnoreCase))
+                            users.Add(user);
+                    }
+                }
+                catch
+                {
+                    // Ignore malformed files while collecting timeline users.
+                }
+            }
+
+            return Task.FromResult(users.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList());
+        }
+
+        public Task<List<DateTime>> GetTimelineDatesForUser(string userName)
+        {
+            var normalizedUser = NormalizeUserName(userName);
+            var days = new HashSet<DateTime>();
+
+            if (string.IsNullOrWhiteSpace(normalizedUser))
+                return Task.FromResult(days.ToList());
+
+            var files = Directory.GetFiles(_logDirectory, "u_ex*.log", SearchOption.AllDirectories);
+            foreach (var path in files)
+            {
+                var fileDate = ExtractDateFromFilename(Path.GetFileName(path));
+                if (!fileDate.HasValue)
+                    continue;
+
+                try
+                {
+                    string[] fields = Array.Empty<string>();
+                    using var reader = new StreamReader(path);
+                    string? line;
+                    var hasUser = false;
+
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        if (line.StartsWith("#Fields:"))
+                        {
+                            fields = line.Substring(9).Trim().Split(' ');
+                            continue;
+                        }
+
+                        if (line.StartsWith("#") || string.IsNullOrWhiteSpace(line) || fields.Length == 0)
+                            continue;
+
+                        var parts = line.Split(' ');
+                        if (parts.Length != fields.Length)
+                            continue;
+
+                        var fieldMap = fields.Select((f, i) => new { f, i })
+                                            .ToDictionary(x => x.f, x => parts[x.i]);
+
+                        if (!fieldMap.TryGetValue("cs-username", out var rawUser))
+                            continue;
+
+                        if (string.Equals(NormalizeUserName(rawUser), normalizedUser, StringComparison.OrdinalIgnoreCase))
+                        {
+                            hasUser = true;
+                            break;
+                        }
+                    }
+
+                    if (hasUser)
+                        days.Add(fileDate.Value.Date);
+                }
+                catch
+                {
+                    // Ignore malformed files while collecting user-active dates.
+                }
+            }
+
+            return Task.FromResult(days.OrderByDescending(d => d).ToList());
+        }
+
+        private class AggregateTracker
+        {
+            public int Hits { get; set; }
+            public long TotalTime { get; set; }
+        }
+
+        private List<TimelineEvent> ParseTimelineSingleFile(string path, DateTime fallbackDate)
+        {
+            var result = new List<TimelineEvent>();
+
+            try
+            {
+                if (!File.Exists(path))
+                    return result;
+
+                string[] fields = Array.Empty<string>();
+                using var reader = new StreamReader(path);
+                string? line;
+
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (line.StartsWith("#Fields:"))
+                    {
+                        fields = line.Substring(9).Trim().Split(' ');
+                        continue;
+                    }
+
+                    if (line.StartsWith("#") || string.IsNullOrWhiteSpace(line) || fields.Length == 0)
+                        continue;
+
+                    var parts = line.Split(' ');
+                    if (parts.Length != fields.Length)
+                        continue;
+
+                    try
+                    {
+                        var fieldMap = fields.Select((f, i) => new { f, i })
+                                            .ToDictionary(x => x.f, x => parts[x.i]);
+
+                        var uriStem = fieldMap.TryGetValue("cs-uri-stem", out var stem) && stem != "-" ? stem : "";
+                        var uriQuery = fieldMap.TryGetValue("cs-uri-query", out var query) && query != "-" ? query : "";
+                        var userRaw = fieldMap.TryGetValue("cs-username", out var user) ? user : "-";
+                        var userName = NormalizeUserName(userRaw);
+
+                        var statusCode = 0;
+                        if (fieldMap.TryGetValue("sc-status", out var statusStr))
+                            int.TryParse(statusStr, out statusCode);
+
+                        var durationMs = 0;
+                        if (fieldMap.TryGetValue("time-taken", out var timeStr))
+                            int.TryParse(timeStr, out durationMs);
+
+                        if (string.IsNullOrWhiteSpace(uriStem))
+                            continue;
+
+                        var ext = Path.GetExtension(uriStem).ToLowerInvariant();
+                        if (DnnMappings.IgnoredExtensions.Contains(ext))
+                            continue;
+
+                        var eventType = DnnMappings.DocumentExtensions.Contains(ext) ? "Document" : "Page";
+                        if (!string.IsNullOrEmpty(uriQuery) && uriQuery.Contains("PopupControlType=", StringComparison.OrdinalIgnoreCase))
+                            eventType = "Popup";
+
+                        if (!TryGetLocalDateTime(fieldMap, fallbackDate, out var localTimestamp))
+                            continue;
+
+                        result.Add(new TimelineEvent
+                        {
+                            TimestampLocal = localTimestamp,
+                            UserName = userName,
+                            Action = string.IsNullOrEmpty(uriQuery) ? uriStem : $"{uriStem}?{uriQuery}",
+                            EventType = eventType,
+                            StatusCode = statusCode,
+                            DurationMs = durationMs
+                        });
+                    }
+                    catch
+                    {
+                        // Ignore malformed lines; timeline should still load.
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore file-level errors.
+            }
+
+            return result;
+        }
+
+        private sealed class FileParseResult
+        {
+            public LogReport Report { get; init; } = new();
+            public Dictionary<string, AggregateTracker> DocumentTracking { get; init; } = new();
+            public Dictionary<string, AggregateTracker> SlowTracking { get; init; } = new();
+        }
+
+        private async Task<LogReport> ParseFiles(IEnumerable<string> filePaths)
+        {
+            var paths = filePaths.Where(File.Exists).ToArray();
+            if (paths.Length == 0)
+                return new LogReport();
+
+            // Parse each file on a background thread, then merge.
+            var tasks = paths.Select(p => Task.Run(() => ParseSingleFile(p)));
+            var results = await Task.WhenAll(tasks);
+
+            var report = new LogReport();
+            var docTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
+            var slowTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var res in results)
+            {
+                var r = res.Report;
+
+                report.TotalHits += r.TotalHits;
+
+                MergeDictionary(report.PageHits, r.PageHits);
+                MergeDictionary(report.PageEntryHits, r.PageEntryHits);
+                MergeNestedDictionary(report.PageNextPageHits, r.PageNextPageHits);
+                MergeDictionary(report.TabHits, r.TabHits);
+                MergeDictionary(report.ModuleHits, r.ModuleHits);
+                MergeDictionary(report.PopupHits, r.PopupHits);
+                MergeDictionary(report.DocumentHits, r.DocumentHits);
+                MergeDictionary(report.TopIPs, r.TopIPs);
+                MergeDictionary(report.ErrorPages, r.ErrorPages);
+                MergeDictionary(report.StatusCodes, r.StatusCodes);
+                MergeDictionary(report.HourlyHits, r.HourlyHits);
+                MergeNestedDictionary(report.HourlyPageHits, r.HourlyPageHits);
+                MergeNestedDictionary(report.HourlyDocumentHits, r.HourlyDocumentHits);
+                MergeNestedDictionary(report.HourlyPopupHits, r.HourlyPopupHits);
+                MergeDictionary(report.WeekdayHits, r.WeekdayHits);
+                MergeNestedDictionary(report.WeekdayPageHits, r.WeekdayPageHits);
+                MergeNestedDictionary(report.WeekdayUserHits, r.WeekdayUserHits);
+                MergeNestedDictionary(report.WeekdayPopupHits, r.WeekdayPopupHits);
+                MergeNestedDictionary(report.WeekdayDocumentHits, r.WeekdayDocumentHits);
+                MergeNestedDictionary(report.WeekdayHourHits, r.WeekdayHourHits);
+                MergeDictionary(report.UserHits, r.UserHits);
+                MergeNestedDictionary(report.UserPageHits, r.UserPageHits);
+                MergeNestedDictionary(report.UserDocumentHits, r.UserDocumentHits);
+                MergeNestedDictionary(report.UserPopupHits, r.UserPopupHits);
+                MergeNestedDictionary(report.UserStatusHits, r.UserStatusHits);
+                MergeNestedDictionary(report.UserHourlyHits, r.UserHourlyHits);
+                MergeNestedDictionary(report.UserWeekdayHits, r.UserWeekdayHits);
+
+                MergeTracking(docTracking, res.DocumentTracking);
+                MergeTracking(slowTracking, res.SlowTracking);
+            }
+
+            // Post-process Sorting and Averages once, after merge
+            report.PageHits = report.PageHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.PageEntryHits = report.PageEntryHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.PageNextPageHits = SortNestedMap(report.PageNextPageHits);
+            report.TabHits = report.TabHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.ModuleHits = report.ModuleHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.PopupHits = report.PopupHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.TopIPs = report.TopIPs.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.ErrorPages = report.ErrorPages.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.HourlyHits = report.HourlyHits.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+            report.HourlyPageHits = SortNestedHourMap(report.HourlyPageHits);
+            report.HourlyDocumentHits = SortNestedHourMap(report.HourlyDocumentHits);
+            report.HourlyPopupHits = SortNestedHourMap(report.HourlyPopupHits);
+            report.WeekdayHits = report.WeekdayHits.OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
+            report.WeekdayPageHits = SortNestedHourMap(report.WeekdayPageHits);
+            report.WeekdayUserHits = SortNestedHourMap(report.WeekdayUserHits);
+            report.WeekdayPopupHits = SortNestedHourMap(report.WeekdayPopupHits);
+            report.WeekdayDocumentHits = SortNestedHourMap(report.WeekdayDocumentHits);
+            report.WeekdayHourHits = SortNestedIntOuterMap(report.WeekdayHourHits);
+            report.UserHits = report.UserHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            report.UserPageHits = SortNestedMap(report.UserPageHits);
+            report.UserDocumentHits = SortNestedMap(report.UserDocumentHits);
+            report.UserPopupHits = SortNestedMap(report.UserPopupHits);
+            report.UserStatusHits = SortNestedMap(report.UserStatusHits);
+            report.UserHourlyHits = SortNestedMap(report.UserHourlyHits);
+            report.UserWeekdayHits = SortNestedMap(report.UserWeekdayHits);
+
+            report.DocumentHits = report.DocumentHits.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+            foreach (var kvp in docTracking)
+            {
+                report.DocumentAvgTime[kvp.Key] = (int)(kvp.Value.TotalTime / kvp.Value.Hits);
+            }
+
+            var sortedSlowPages = slowTracking
+                .ToDictionary(kvp => kvp.Key, kvp => (int)(kvp.Value.TotalTime / kvp.Value.Hits))
+                .OrderByDescending(x => x.Value)
+                .ToDictionary(x => x.Key, x => x.Value);
+            report.SlowPages = sortedSlowPages;
+
+            return report;
+        }
+
+        private static void MergeDictionary<TKey>(Dictionary<TKey, int> target, Dictionary<TKey, int> source) where TKey : notnull
+        {
+            foreach (var kvp in source)
+            {
+                if (target.TryGetValue(kvp.Key, out var existing))
+                    target[kvp.Key] = existing + kvp.Value;
+                else
+                    target[kvp.Key] = kvp.Value;
+            }
+        }
+
+        private static void MergeTracking(Dictionary<string, AggregateTracker> target, Dictionary<string, AggregateTracker> source)
+        {
+            foreach (var (key, tracker) in source)
+            {
+                if (!target.TryGetValue(key, out var existing))
+                {
+                    target[key] = new AggregateTracker { Hits = tracker.Hits, TotalTime = tracker.TotalTime };
+                }
+                else
+                {
+                    existing.Hits += tracker.Hits;
+                    existing.TotalTime += tracker.TotalTime;
+                }
+            }
+        }
+
+        private static void MergeNestedDictionary<TOuterKey, TInnerKey>(
+            Dictionary<TOuterKey, Dictionary<TInnerKey, int>> target,
+            Dictionary<TOuterKey, Dictionary<TInnerKey, int>> source)
+            where TOuterKey : notnull
+            where TInnerKey : notnull
+        {
+            foreach (var (outerKey, bucket) in source)
+            {
+                if (!target.TryGetValue(outerKey, out var targetBucket))
+                {
+                    targetBucket = new Dictionary<TInnerKey, int>();
+                    target[outerKey] = targetBucket;
+                }
+
+                foreach (var (key, count) in bucket)
+                {
+                    if (targetBucket.TryGetValue(key, out var existing))
+                        targetBucket[key] = existing + count;
+                    else
+                        targetBucket[key] = count;
+                }
+            }
+        }
+
+        private static Dictionary<int, Dictionary<string, int>> SortNestedHourMap(
+            Dictionary<int, Dictionary<string, int>> source)
+        {
+            return source
+                .OrderBy(x => x.Key)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.Value
+                        .GroupBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                        .Select(g => new KeyValuePair<string, int>(
+                            g.First().Key,
+                            g.Sum(i => i.Value)))
+                        .OrderByDescending(i => i.Value)
+                        .ThenBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(i => i.Key, i => i.Value, StringComparer.OrdinalIgnoreCase));
+        }
+
+        private static Dictionary<string, Dictionary<TInnerKey, int>> SortNestedMap<TInnerKey>(
+            Dictionary<string, Dictionary<TInnerKey, int>> source)
+            where TInnerKey : notnull
+        {
+            return source
+                .GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(g => new KeyValuePair<string, Dictionary<TInnerKey, int>>(
+                    g.First().Key,
+                    g.Select(x => x.Value)
+                        .Aggregate(new Dictionary<TInnerKey, int>(), (acc, map) => MergeInnerMap(acc, map))))
+                .OrderByDescending(x => x.Value.Values.Sum())
+                .ThenBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    x => x.Key,
+                    x => MergeAndSortInnerMap(x.Value),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static Dictionary<TInnerKey, int> MergeInnerMap<TInnerKey>(
+            Dictionary<TInnerKey, int> target,
+            Dictionary<TInnerKey, int> source)
+            where TInnerKey : notnull
+        {
+            if (typeof(TInnerKey) == typeof(string))
+            {
+                foreach (var item in source)
+                {
+                    var key = (string)(object)item.Key;
+                    var existingPair = target
+                        .FirstOrDefault(k => string.Equals((string)(object)k.Key, key, StringComparison.OrdinalIgnoreCase));
+
+                    if (!EqualityComparer<TInnerKey>.Default.Equals(existingPair.Key, default!))
+                    {
+                        target[existingPair.Key] = existingPair.Value + item.Value;
+                    }
+                    else
+                    {
+                        target[item.Key] = item.Value;
+                    }
+                }
+
+                return target;
+            }
+
+            foreach (var item in source)
+            {
+                if (target.TryGetValue(item.Key, out var existing))
+                    target[item.Key] = existing + item.Value;
+                else
+                    target[item.Key] = item.Value;
+            }
+
+            return target;
+        }
+
+        private static Dictionary<TInnerKey, int> MergeAndSortInnerMap<TInnerKey>(Dictionary<TInnerKey, int> source)
+            where TInnerKey : notnull
+        {
+            if (typeof(TInnerKey) == typeof(string))
+            {
+                var merged = source
+                    .Select(i => new KeyValuePair<string, int>((string)(object)i.Key, i.Value))
+                    .GroupBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => new KeyValuePair<string, int>(g.First().Key, g.Sum(i => i.Value)))
+                    .OrderByDescending(i => i.Value)
+                    .ThenBy(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(i => i.Key, i => i.Value, StringComparer.OrdinalIgnoreCase);
+
+                return merged.ToDictionary(i => (TInnerKey)(object)i.Key, i => i.Value);
+            }
+
+            return source
+                .GroupBy(i => i.Key)
+                .Select(g => new KeyValuePair<TInnerKey, int>(g.First().Key, g.Sum(i => i.Value)))
+                .OrderByDescending(i => i.Value)
+                .ToDictionary(i => i.Key, i => i.Value);
+        }
+
+        private static Dictionary<int, Dictionary<TInnerKey, int>> SortNestedIntOuterMap<TInnerKey>(
+            Dictionary<int, Dictionary<TInnerKey, int>> source)
+            where TInnerKey : notnull
+        {
+            return source
+                .OrderBy(x => x.Key)
+                .ToDictionary(
+                    x => x.Key,
+                    x => MergeAndSortInnerMap(x.Value));
+        }
+
+        private FileParseResult ParseSingleFile(string path)
+        {
+            var report = new LogReport();
+            var docTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
+            var slowTracking = new Dictionary<string, AggregateTracker>(StringComparer.OrdinalIgnoreCase);
+            var fallbackDate = ExtractDateFromFilename(Path.GetFileName(path));
+            var lastPageByUser = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var lastSeenByUser = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+            var sessionWindow = TimeSpan.FromMinutes(30);
+
+            try
+            {
+                if (!File.Exists(path))
+                    return new FileParseResult { Report = report, DocumentTracking = docTracking, SlowTracking = slowTracking };
+
+                string[] fields = Array.Empty<string>();
+
+                using var reader = new StreamReader(path);
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (line.StartsWith("#Fields:"))
+                    {
+                        fields = line.Substring(9).Trim().Split(' ');
+                        continue;
+                    }
+                    if (line.StartsWith("#") || string.IsNullOrWhiteSpace(line)) continue;
+                    if (fields.Length == 0) continue;
+
+                    var parts = line.Split(' ');
+                    if (parts.Length != fields.Length) continue;
+
+                    try
+                    {
+                        var fieldMap = fields.Select((f, i) => new { f, i })
+                                            .ToDictionary(x => x.f, x => parts[x.i]);
+
+                        
+
+                        string uriStem = "";
+                        string uriQuery = "";
+                        string clientIp = "";
+                        int statusCode = 0;
+                        int timeTaken = 0;
+
+                        if (fieldMap.TryGetValue("cs-uri-stem", out var uri))
+                            uriStem = uri == "-" ? "" : uri;
+
+                        if (fieldMap.TryGetValue("cs-uri-query", out var query))
+                            uriQuery = query == "-" ? "" : query;
+
+                        if (fieldMap.TryGetValue("c-ip", out var ip))
+                            clientIp = ip == "-" ? "" : ip;
+
+                        string userName = "Anonymous";
+                        if (fieldMap.TryGetValue("cs-username", out var user))
+                            userName = NormalizeUserName(user);
+
+                        if (fieldMap.TryGetValue("sc-status", out var statusStr) &&
+                            int.TryParse(statusStr, out var sc))
+                            statusCode = sc;
+
+                        if (fieldMap.TryGetValue("time-taken", out var ttStr) &&
+                            int.TryParse(ttStr, out var tt))
+                            timeTaken = tt;
+
+                        
+                        report.TotalHits++;
+
+                        // Track hourly traffic in configured local timezone (IIS timestamp is UTC)
+                        int? hourForBreakdown = null;
+                        int? weekdayForBreakdown = null;
+                        if (TryGetLocalDateTime(fieldMap, fallbackDate, out var localDateTime))
+                        {
+                            int hour = localDateTime.Hour;
+                            int weekday = (int)localDateTime.DayOfWeek;
+                            if (!report.HourlyHits.ContainsKey(hour))
+                                report.HourlyHits[hour] = 0;
+                            report.HourlyHits[hour]++;
+
+                            if (!report.WeekdayHits.ContainsKey(weekday))
+                                report.WeekdayHits[weekday] = 0;
+                            report.WeekdayHits[weekday]++;
+
+                            hourForBreakdown = hour;
+                            weekdayForBreakdown = weekday;
+
+                            IncrementNestedBucket(report.WeekdayHourHits, weekday, hour);
+                            IncrementNestedBucket(report.WeekdayUserHits, weekday, userName);
+
+                            IncrementNestedBucket(report.UserHourlyHits, userName, hour);
+                            IncrementNestedBucket(report.UserWeekdayHits, userName, weekday);
+                        }
+                        // Increment Status Code
+                        if (statusCode > 0)
+                        {
+                            if (!report.StatusCodes.ContainsKey(statusCode))
+                                report.StatusCodes[statusCode] = 0;
+                            report.StatusCodes[statusCode]++;
+                        }
+
+                        // Increment Client IP
+                        if (!string.IsNullOrEmpty(clientIp))
+                        {
+                            if (!report.TopIPs.ContainsKey(clientIp))
+                                report.TopIPs[clientIp] = 0;
+                            report.TopIPs[clientIp]++;
+                        }
+
+                        if (!report.UserHits.ContainsKey(userName))
+                            report.UserHits[userName] = 0;
+                        report.UserHits[userName]++;
+
+                        // Determine file extension
+                        string fileExtension = Path.GetExtension(uriStem).ToLowerInvariant();
+
+                        // Skip ignored extensions and empty/dash stems
+                        if (string.IsNullOrEmpty(uriStem) ||
+                            DnnMappings.IgnoredExtensions.Contains(fileExtension))
+                        {
+                            continue;
+                        }
+
+                        // Determine Entry Type
+                        bool isDocument = DnnMappings.DocumentExtensions.Contains(fileExtension);
+
+                        // Parse query string for DNN specific things
+                        string? tabName = null;
+                        string? moduleName = null;
+                        int? popupType = null;
+
+                        if (!string.IsNullOrEmpty(uriQuery))
+                        {
+                            var queryParams = uriQuery.Split('&')
+                                .Select(p => p.Split('='))
+                                .Where(p => p.Length == 2)
+                                .ToDictionary(p => p[0], p => p[1], StringComparer.OrdinalIgnoreCase);
+
+                            if (queryParams.TryGetValue("TabID", out var tabIdStr) && int.TryParse(tabIdStr, out var tabId))
+                                tabName = DnnMappings.Tabs.TryGetValue(tabId, out var tn) ? tn : $"Tab {tabId}";
+
+                            if (queryParams.TryGetValue("ModuleID", out var modIdStr) && int.TryParse(modIdStr, out var modId))
+                                moduleName = DnnMappings.Modules.TryGetValue(modId, out var mn) ? mn : $"Module {modId}";
+
+                            if (queryParams.TryGetValue("PopupControlType", out var pctStr) && int.TryParse(pctStr, out var pct))
+                                popupType = pct;
+                        }
+
+                        // Track Error Pages (400+)
+                        if (statusCode >= 400)
+                        {
+                            string errLabel = $"{uriStem} ({statusCode})";
+                            if (!report.ErrorPages.ContainsKey(errLabel))
+                                report.ErrorPages[errLabel] = 0;
+                            report.ErrorPages[errLabel]++;
+                        }
+
+                        if (statusCode > 0)
+                            IncrementNestedBucket(report.UserStatusHits, userName, statusCode);
+
+                        if (isDocument)
+                        {
+                            // Track Documents
+                            if (!report.DocumentHits.ContainsKey(uriStem))
+                                report.DocumentHits[uriStem] = 0;
+                            report.DocumentHits[uriStem]++;
+
+                            if (!docTracking.ContainsKey(uriStem))
+                                docTracking[uriStem] = new AggregateTracker();
+                            docTracking[uriStem].Hits++;
+                            docTracking[uriStem].TotalTime += timeTaken;
+
+                            if (hourForBreakdown.HasValue)
+                                IncrementHourlyBucket(report.HourlyDocumentHits, hourForBreakdown.Value, uriStem);
+
+                            if (weekdayForBreakdown.HasValue)
+                                IncrementNestedBucket(report.WeekdayDocumentHits, weekdayForBreakdown.Value, uriStem);
+
+                            IncrementNestedBucket(report.UserDocumentHits, userName, uriStem);
+                        }
+                        else
+                        {
+                            // It's a Page
+                            string pageLabel = BuildPageLabel(uriStem, uriQuery, tabName, moduleName);
+
+                            if (!report.PageHits.ContainsKey(pageLabel))
+                                report.PageHits[pageLabel] = 0;
+                            report.PageHits[pageLabel]++;
+
+                            // Approximate session boundaries to infer entry pages and transitions.
+                            var hasRecentPrevious = false;
+                            if (TryGetLocalDateTime(fieldMap, fallbackDate, out var pageDateTime) &&
+                                lastSeenByUser.TryGetValue(userName, out var previousSeenAt) &&
+                                pageDateTime >= previousSeenAt &&
+                                pageDateTime - previousSeenAt <= sessionWindow)
+                            {
+                                hasRecentPrevious = lastPageByUser.TryGetValue(userName, out _);
+                            }
+
+                            if (!hasRecentPrevious)
+                            {
+                                if (!report.PageEntryHits.ContainsKey(pageLabel))
+                                    report.PageEntryHits[pageLabel] = 0;
+                                report.PageEntryHits[pageLabel]++;
+                            }
+                            else if (lastPageByUser.TryGetValue(userName, out var previousPage) &&
+                                     !string.IsNullOrWhiteSpace(previousPage) &&
+                                     !string.Equals(previousPage, pageLabel, StringComparison.OrdinalIgnoreCase))
+                            {
+                                IncrementNestedBucket(report.PageNextPageHits, previousPage, pageLabel);
+                            }
+
+                            lastPageByUser[userName] = pageLabel;
+                            if (TryGetLocalDateTime(fieldMap, fallbackDate, out var lastSeenAt))
+                                lastSeenByUser[userName] = lastSeenAt;
+
+                            if (hourForBreakdown.HasValue)
+                                IncrementHourlyBucket(report.HourlyPageHits, hourForBreakdown.Value, pageLabel);
+
+                            if (weekdayForBreakdown.HasValue)
+                                IncrementNestedBucket(report.WeekdayPageHits, weekdayForBreakdown.Value, pageLabel);
+
+                            IncrementNestedBucket(report.UserPageHits, userName, pageLabel);
+
+                            // Track Slow Pages Time
+                            if (timeTaken > 0)
+                            {
+                                if (!slowTracking.ContainsKey(pageLabel))
+                                    slowTracking[pageLabel] = new AggregateTracker();
+                                slowTracking[pageLabel].Hits++;
+                                slowTracking[pageLabel].TotalTime += timeTaken;
+                            }
+
+                            // Track Tabs
+                            if (tabName != null)
+                            {
+                                if (!report.TabHits.ContainsKey(tabName))
+                                    report.TabHits[tabName] = 0;
+                                report.TabHits[tabName]++;
+                            }
+
+                            // Track Modules
+                            if (moduleName != null)
+                            {
+                                if (!report.ModuleHits.ContainsKey(moduleName))
+                                    report.ModuleHits[moduleName] = 0;
+                                report.ModuleHits[moduleName]++;
+                            }
+
+                            // Track Popups
+                            if (popupType.HasValue)
+                            {
+                                string popLabel = DnnMappings.PopupControlTypes.TryGetValue(popupType.Value, out var pn) ? pn : $"Type {popupType}";
+                                if (!report.PopupHits.ContainsKey(popLabel))
+                                    report.PopupHits[popLabel] = 0;
+                                report.PopupHits[popLabel]++;
+
+                                IncrementNestedBucket(report.UserPopupHits, userName, popLabel);
+
+                                if (hourForBreakdown.HasValue)
+                                    IncrementHourlyBucket(report.HourlyPopupHits, hourForBreakdown.Value, popLabel);
+
+                                if (weekdayForBreakdown.HasValue)
+                                    IncrementNestedBucket(report.WeekdayPopupHits, weekdayForBreakdown.Value, popLabel);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore file-level parse errors; partial data is fine.
+            }
+
+            return new FileParseResult
+            {
+                Report = report,
+                DocumentTracking = docTracking,
+                SlowTracking = slowTracking
+            };
+        }
+
+        private string BuildPageLabel(string stem, string query, string? tabName, string? moduleName)
+        {
+            var formattedQuery = string.IsNullOrEmpty(query) ? "" : $"?{query}";
+
+            if (tabName != null && moduleName != null)
+                return $"{stem}{formattedQuery} (Tab={tabName}, Module={moduleName})";
+
+            if (tabName != null)
+                return $"{stem}{formattedQuery} (Tab={tabName})";
+
+            return stem;
+        }
+
+        private static void IncrementHourlyBucket(Dictionary<int, Dictionary<string, int>> map, int hour, string key)
+        {
+            if (!map.TryGetValue(hour, out var bucket))
+            {
+                bucket = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                map[hour] = bucket;
+            }
+
+            if (bucket.TryGetValue(key, out var existing))
+                bucket[key] = existing + 1;
+            else
+                bucket[key] = 1;
+        }
+
+        private static void IncrementNestedBucket<TOuterKey, TInnerKey>(
+            Dictionary<TOuterKey, Dictionary<TInnerKey, int>> map,
+            TOuterKey outerKey,
+            TInnerKey innerKey)
+            where TOuterKey : notnull
+            where TInnerKey : notnull
+        {
+            if (!map.TryGetValue(outerKey, out var bucket))
+            {
+                bucket = new Dictionary<TInnerKey, int>();
+                map[outerKey] = bucket;
+            }
+
+            if (bucket.TryGetValue(innerKey, out var existing))
+                bucket[innerKey] = existing + 1;
+            else
+                bucket[innerKey] = 1;
+        }
+
+        private static string NormalizeUserName(string rawUser)
+        {
+            if (string.IsNullOrWhiteSpace(rawUser) || rawUser == "-")
+                return "Anonymous";
+
+            var trimmed = rawUser.Trim();
+            if (trimmed.Contains('\\'))
+            {
+                var pieces = trimmed.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+                if (pieces.Length > 0)
+                    return pieces[^1];
+            }
+
+            return trimmed;
+        }
+
+        private static Dictionary<string, UserProfile> LoadUserProfiles(string? userCsvPath)
+        {
+            var profiles = new Dictionary<string, UserProfile>(StringComparer.OrdinalIgnoreCase);
+
+            var resolvedPath = ResolveUserCsvPath(userCsvPath);
+            if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath))
+                return profiles;
+
+            try
+            {
+                using var reader = new StreamReader(resolvedPath);
+                var headerLine = reader.ReadLine();
+                if (string.IsNullOrWhiteSpace(headerLine))
+                    return profiles;
+
+                var headers = headerLine.Split(',').Select(h => h.Trim()).ToArray();
+                var index = headers
+                    .Select((name, idx) => new { name, idx })
+                    .ToDictionary(x => x.name, x => x.idx, StringComparer.OrdinalIgnoreCase);
+
+                while (!reader.EndOfStream)
+                {
+                    var line = reader.ReadLine();
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    var cols = line.Split(',');
+                    var loginName = ReadCsvValue(cols, index, "loginname");
+                    if (string.IsNullOrWhiteSpace(loginName))
+                        continue;
+
+                    profiles[loginName] = new UserProfile
+                    {
+                        LoginName = loginName,
+                        Name = ReadCsvValue(cols, index, "name"),
+                        FirstName = ReadCsvValue(cols, index, "firstname"),
+                        LastName = ReadCsvValue(cols, index, "lastname"),
+                        Email = ReadCsvValue(cols, index, "email"),
+                        Department = ReadCsvValue(cols, index, "department")
+                    };
+                }
+            }
+            catch
+            {
+                // Ignore CSV load errors; report should continue without enrichment.
+            }
+
+            return profiles;
+        }
+
+        private static string ResolveUserCsvPath(string? configuredPath)
+        {
+            if (string.IsNullOrWhiteSpace(configuredPath))
+                return Path.Combine(Directory.GetCurrentDirectory(), "Data", "user-profiles.csv");
+
+            if (Path.IsPathRooted(configuredPath))
+                return configuredPath;
+
+            return Path.Combine(Directory.GetCurrentDirectory(), configuredPath);
+        }
+
+        private static string ReadCsvValue(string[] cols, Dictionary<string, int> index, string key)
+        {
+            if (!index.TryGetValue(key, out var colIndex))
+                return "";
+
+            if (colIndex < 0 || colIndex >= cols.Length)
+                return "";
+
+            return cols[colIndex].Trim();
+        }
+
+        private bool TryGetLocalDateTime(Dictionary<string, string> fieldMap, DateTime? fallbackDate, out DateTime localDateTime)
+        {
+            localDateTime = default;
+
+            if (!fieldMap.TryGetValue("time", out var timeStr) ||
+                !TimeSpan.TryParse(timeStr, out var timeVal))
+            {
+                return false;
+            }
+
+            DateTime datePart;
+            if (fieldMap.TryGetValue("date", out var dateStr) &&
+                DateTime.TryParseExact(
+                    dateStr,
+                    "yyyy-MM-dd",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None,
+                    out var parsedDate))
+            {
+                datePart = parsedDate.Date;
+            }
+            else if (fallbackDate.HasValue)
+            {
+                datePart = fallbackDate.Value.Date;
+            }
+            else
+            {
+                localDateTime = DateTime.Today.Add(timeVal);
+                return true;
+            }
+
+            var utcDateTime = DateTime.SpecifyKind(datePart.Add(timeVal), DateTimeKind.Utc);
+            localDateTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, _targetTimeZone);
+            return true;
+        }
+
+        private static TimeZoneInfo ResolveTimeZone(string? timeZoneId)
+        {
+            if (string.IsNullOrWhiteSpace(timeZoneId))
+                return TimeZoneInfo.Local;
+
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId.Trim());
+            }
+            catch
+            {
+                return TimeZoneInfo.Local;
+            }
+        }
+
+        private DateTime? ExtractDateFromFilename(string filename)
+        {
+            try
+            {
+                if (filename.Length < 10) return null;
+                var datePart = filename.Substring(4, 6);
+                if (DateTime.TryParseExact(datePart, "yyMMdd",
+                    null, System.Globalization.DateTimeStyles.None, out var date))
+                    return date;
+            }
+            catch { }
+            return null;
+        }
+    }
+}
+============================================================
+FILE: Services/SelectionState.cs
+============================================================
+namespace IISLogViewer.Services
+{
+    public class SelectionState
+    {
+        public HashSet<DateTime> SelectedDays { get; set; } = new();
+        public string CurrentFolder { get; set; } = "";
+        public event Action? OnChange;
+        public event Action? OnFolderChanged;
+
+        public void NotifyChanged() => OnChange?.Invoke();
+        public void NotifyFolderChanged() => OnFolderChanged?.Invoke();
+    }
+}
