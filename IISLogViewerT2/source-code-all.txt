@@ -1,10 +1,9 @@
-IISLogViewer Source Code Bundle
-Generated: 2026-03-23 09:22:12
-File count: 21
+IISLogViewer Source Code
+Generated: 2026-03-23 09:47:39
+Total files: 21
 
-============================================================
 FILE: Components/App.razor
-============================================================
+------------------------------------------------------------
 <!DOCTYPE html>
 <html lang="en">
 
@@ -47,9 +46,8 @@ FILE: Components/App.razor
 
 </html>
 
-============================================================
 FILE: Components/_Imports.razor
-============================================================
+------------------------------------------------------------
 @using System.Net.Http
 @using System.Net.Http.Json
 @using Microsoft.AspNetCore.Components.Forms
@@ -65,9 +63,8 @@ FILE: Components/_Imports.razor
 @using Telerik.Blazor.Components
 @using Telerik.SvgIcons
 
-============================================================
 FILE: Components/Layout/MainLayout.razor
-============================================================
+------------------------------------------------------------
 @inherits LayoutComponentBase
 @rendermode InteractiveServer
 @inject IJSRuntime JS
@@ -241,9 +238,8 @@ FILE: Components/Layout/MainLayout.razor
     }
 }
 
-============================================================
 FILE: Components/Layout/NavMenu.razor
-============================================================
+------------------------------------------------------------
 @rendermode InteractiveServer
 @inject IISLogViewer.Services.LogParserService LogParser
 @inject IISLogViewer.Services.SelectionState SelectionState
@@ -638,9 +634,8 @@ FILE: Components/Layout/NavMenu.razor
     }
 }
 
-============================================================
 FILE: Components/Pages/Counter.razor
-============================================================
+------------------------------------------------------------
 ﻿@page "/counter"
 @rendermode InteractiveServer
 
@@ -664,9 +659,8 @@ FILE: Components/Pages/Counter.razor
     }
 }
 
-============================================================
 FILE: Components/Pages/Dashboard.razor
-============================================================
+------------------------------------------------------------
 @page "/"
 @rendermode InteractiveServer
 @inject IISLogViewer.Services.LogParserService LogParser
@@ -843,9 +837,8 @@ else
     }
 }
 
-============================================================
 FILE: Components/Pages/Error.razor
-============================================================
+------------------------------------------------------------
 ﻿@page "/Error"
 @using System.Diagnostics
 
@@ -883,9 +876,8 @@ FILE: Components/Pages/Error.razor
         RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
 }
 
-============================================================
 FILE: Components/Pages/Report.razor
-============================================================
+------------------------------------------------------------
 @inject IISLogViewer.Services.LogParserService LogParserService
 
 <div class="report-tabs">
@@ -1913,9 +1905,8 @@ FILE: Components/Pages/Report.razor
     }
 }
 
-============================================================
 FILE: Components/Pages/ReportSelected.razor
-============================================================
+------------------------------------------------------------
 @page "/report"
 @rendermode InteractiveServer
 @inject IISLogViewer.Services.LogParserService LogParser
@@ -2108,9 +2099,8 @@ else
     }
 }
 
-============================================================
 FILE: Components/Pages/Weather.razor
-============================================================
+------------------------------------------------------------
 ﻿@page "/weather"
 @attribute [StreamRendering]
 
@@ -2171,9 +2161,8 @@ else
     }
 }
 
-============================================================
 FILE: Components/Routes.razor
-============================================================
+------------------------------------------------------------
 ﻿<Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
@@ -2181,9 +2170,8 @@ FILE: Components/Routes.razor
     </Found>
 </Router>
 
-============================================================
 FILE: Components/Shared/HourlyHitsDetailPopup.razor
-============================================================
+------------------------------------------------------------
 @if (IsOpen)
 {
     <TelerikWindow Width="900px"
@@ -2344,17 +2332,15 @@ FILE: Components/Shared/HourlyHitsDetailPopup.razor
     private sealed record ItemHitRow(string Item, int Hits);
 }
 
-============================================================
 FILE: Components/Shared/LabelValueRow.cs
-============================================================
+------------------------------------------------------------
 namespace IISLogViewer.Components.Shared;
 
 public sealed record LabelValueRow(string Label, string ValueLabel);
 
 
-============================================================
 FILE: Components/Shared/LabelValueSection.razor
-============================================================
+------------------------------------------------------------
 @namespace IISLogViewer.Components.Shared
 
 <div class="grid-toolbar">
@@ -2462,9 +2448,8 @@ else
 
 }
 
-============================================================
 FILE: Components/Shared/Pager.razor
-============================================================
+------------------------------------------------------------
 @namespace IISLogViewer.Components.Shared
 
 @if (TotalPages > 1)
@@ -2502,9 +2487,8 @@ FILE: Components/Shared/Pager.razor
     }
 }
 
-============================================================
 FILE: Components/Shared/UserHitsDetailPopup.razor
-============================================================
+------------------------------------------------------------
 @if (IsOpen)
 {
     <TelerikWindow Width="1320px"
@@ -3028,9 +3012,8 @@ FILE: Components/Shared/UserHitsDetailPopup.razor
     private sealed record UserTimelineRow(string TimeLabel, string Action, string EventType, string StatusLabel, string DurationLabel);
 }
 
-============================================================
 FILE: Components/Shared/WeekdayDetailPopup.razor
-============================================================
+------------------------------------------------------------
 @inject IISLogViewer.Services.LogParserService LogParserService
 
 @if (IsOpen)
@@ -3284,9 +3267,8 @@ FILE: Components/Shared/WeekdayDetailPopup.razor
     private sealed record HourHitRow(string HourLabel, int Hits);
 }
 
-============================================================
 FILE: Program.cs
-============================================================
+------------------------------------------------------------
 using Microsoft.AspNetCore.Components.Web;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -3324,9 +3306,8 @@ app.MapRazorComponents<IISLogViewer.Components.App>()
 
 app.Run();
 
-============================================================
 FILE: Services/DnnMappings.cs
-============================================================
+------------------------------------------------------------
 namespace IISLogViewer.Services
 {
     public static class DnnMappings
@@ -3387,9 +3368,8 @@ namespace IISLogViewer.Services
         };
     }
 }
-============================================================
 FILE: Services/LogParserService.cs
-============================================================
+------------------------------------------------------------
 namespace IISLogViewer.Services
 {
     public class LogEntry
@@ -4638,9 +4618,8 @@ namespace IISLogViewer.Services
         }
     }
 }
-============================================================
 FILE: Services/SelectionState.cs
-============================================================
+------------------------------------------------------------
 namespace IISLogViewer.Services
 {
     public class SelectionState
