@@ -62,6 +62,9 @@ namespace IISLogViewer.Services
         public string UserName { get; set; } = "Anonymous";
         public string Action { get; set; } = "";
         public string EventType { get; set; } = "Page";
+        public string TabName { get; set; } = "-";
+        public string ModuleName { get; set; } = "-";
+        public string PopupName { get; set; } = "-";
         public int StatusCode { get; set; }
         public int DurationMs { get; set; }
     }
@@ -475,6 +478,27 @@ namespace IISLogViewer.Services
                         if (!string.IsNullOrEmpty(uriQuery) && uriQuery.Contains("PopupControlType=", StringComparison.OrdinalIgnoreCase))
                             eventType = "Popup";
 
+                        string tabName = "-";
+                        string moduleName = "-";
+                        string popupName = "-";
+
+                        if (!string.IsNullOrEmpty(uriQuery))
+                        {
+                            var queryParams = uriQuery.Split('&')
+                                .Select(p => p.Split('='))
+                                .Where(p => p.Length == 2)
+                                .ToDictionary(p => p[0], p => p[1], StringComparer.OrdinalIgnoreCase);
+
+                            if (queryParams.TryGetValue("TabID", out var tabIdStr) && int.TryParse(tabIdStr, out var tabId))
+                                tabName = DnnMappings.Tabs.TryGetValue(tabId, out var tn) ? tn : $"Tab {tabId}";
+
+                            if (queryParams.TryGetValue("ModuleID", out var modIdStr) && int.TryParse(modIdStr, out var modId))
+                                moduleName = DnnMappings.Modules.TryGetValue(modId, out var mn) ? mn : $"Module {modId}";
+
+                            if (queryParams.TryGetValue("PopupControlType", out var pctStr) && int.TryParse(pctStr, out var pct))
+                                popupName = DnnMappings.PopupControlTypes.TryGetValue(pct, out var pn) ? pn : $"Type {pct}";
+                        }
+
                         if (!TryGetLocalDateTime(fieldMap, fallbackDate, out var localTimestamp))
                             continue;
 
@@ -484,6 +508,9 @@ namespace IISLogViewer.Services
                             UserName = userName,
                             Action = string.IsNullOrEmpty(uriQuery) ? uriStem : $"{uriStem}?{uriQuery}",
                             EventType = eventType,
+                            TabName = tabName,
+                            ModuleName = moduleName,
+                            PopupName = popupName,
                             StatusCode = statusCode,
                             DurationMs = durationMs
                         });
@@ -943,7 +970,11 @@ namespace IISLogViewer.Services
                         else
                         {
                             // It's a Page
-                            string pageLabel = BuildPageLabel(uriStem, uriQuery, tabName, moduleName);
+                            string? popupLabel = null;
+                            if (popupType.HasValue)
+                                popupLabel = DnnMappings.PopupControlTypes.TryGetValue(popupType.Value, out var pn) ? pn : $"Type {popupType.Value}";
+
+                            string pageLabel = BuildPageLabel(uriStem, uriQuery, tabName, moduleName, popupLabel);
 
                             if (!report.PageHits.ContainsKey(pageLabel))
                                 report.PageHits[pageLabel] = 0;
@@ -1046,9 +1077,12 @@ namespace IISLogViewer.Services
             };
         }
 
-        private string BuildPageLabel(string stem, string query, string? tabName, string? moduleName)
+        private string BuildPageLabel(string stem, string query, string? tabName, string? moduleName, string? popupLabel)
         {
             var formattedQuery = string.IsNullOrEmpty(query) ? "" : $"?{query}";
+
+            if (!string.IsNullOrWhiteSpace(popupLabel))
+                return $"{popupLabel}";
 
             if (tabName != null && moduleName != null)
                 return $"{stem}{formattedQuery} (Tab={tabName}, Module={moduleName})";

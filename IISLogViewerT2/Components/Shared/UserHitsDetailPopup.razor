@@ -390,14 +390,17 @@
         try
         {
             var events = await LogParserService.ParseTimelineDayForUser(selectedDate.Date, SelectedUser);
-            _timelineRows = events
+            var orderedEvents = events
                 .OrderBy(e => e.TimestampLocal)
-                .Select(e => new UserTimelineRow(
-                    e.TimestampLocal.ToString("HH:mm:ss"),
-                    e.Action,
-                    e.EventType,
-                    e.StatusCode > 0 ? e.StatusCode.ToString() : "-",
-                    e.DurationMs > 0 ? $"{e.DurationMs:N0} ms" : "-"))
+                .ToList();
+
+            _timelineRows = CombineTimelineRows(orderedEvents)
+                .Select(row => new UserTimelineRow(
+                    row.TimestampLocal.ToString("HH:mm:ss"),
+                    row.Count > 1 ? $"{row.Action} (x{row.Count})" : row.Action,
+                    row.EventType,
+                    row.StatusLabel,
+                    row.DurationMs > 0 ? $"{row.DurationMs:N0} ms" : "-"))
                 .ToList();
         }
         finally
@@ -522,10 +525,65 @@
         return Task.CompletedTask;
     }
 
+    private static List<CombinedTimelineRow> CombineTimelineRows(IEnumerable<IISLogViewer.Services.TimelineEvent> orderedEvents)
+    {
+        var result = new List<CombinedTimelineRow>();
+
+        foreach (var e in orderedEvents)
+        {
+            var action = string.Equals(e.EventType, "Popup", StringComparison.OrdinalIgnoreCase) &&
+                         !string.IsNullOrWhiteSpace(e.PopupName) &&
+                         e.PopupName != "-"
+                ? e.PopupName
+                : e.Action;
+
+            if (result.Count == 0 || !string.Equals(result[^1].Action, action, StringComparison.OrdinalIgnoreCase))
+            {
+                result.Add(new CombinedTimelineRow
+                {
+                    TimestampLocal = e.TimestampLocal,
+                    Action = action,
+                    EventType = e.EventType,
+                    StatusLabel = e.StatusCode > 0 ? e.StatusCode.ToString() : "-",
+                    DurationMs = Math.Max(0, e.DurationMs),
+                    Count = 1
+                });
+                continue;
+            }
+
+            var current = result[^1];
+            current.Count++;
+            current.DurationMs += Math.Max(0, e.DurationMs);
+            if (!string.Equals(current.EventType, e.EventType, StringComparison.OrdinalIgnoreCase))
+                current.EventType = "Mixed";
+
+            var nextStatus = e.StatusCode > 0 ? e.StatusCode.ToString() : "-";
+            if (!string.Equals(current.StatusLabel, nextStatus, StringComparison.OrdinalIgnoreCase))
+                current.StatusLabel = "Mixed";
+        }
+
+        return result;
+    }
+
+    private sealed class CombinedTimelineRow
+    {
+        public DateTime TimestampLocal { get; set; }
+        public string Action { get; set; } = "";
+        public string EventType { get; set; } = "Page";
+        public string StatusLabel { get; set; } = "-";
+        public int DurationMs { get; set; }
+        public int Count { get; set; }
+    }
+
     private sealed record ItemHitRow(string Item, int Hits);
     private sealed record HourHitRow(string HourLabel, int Hits);
     private sealed record PeakHourInfo(string HourLabel, int Hits, string PercentageLabel);
     private sealed record WeekdayRow(string DayLabel, string HitsLabel, string PercentLabel);
     private sealed record TimelineDateOption(string Text, string Value);
-    private sealed record UserTimelineRow(string TimeLabel, string Action, string EventType, string StatusLabel, string DurationLabel);
+    private sealed record UserTimelineRow(
+        string TimeLabel,
+        string Action,
+        string EventType,
+        string StatusLabel,
+        string DurationLabel);
 }
