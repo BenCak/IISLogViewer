@@ -85,47 +85,6 @@
                 </TelerikGrid>
             }
 
-            @if (_showNextPageFlowPopup)
-            {
-                <TelerikWindow Width="880px"
-                               Height="560px"
-                               Visible="@_showNextPageFlowPopup"
-                               Modal="true"
-                               Draggable="true"
-                               Resizable="true"
-                               Class="popup-window popup-window--flow">
-                    <WindowTitle>
-                        Next Page Flow - @_selectedFlowPage
-                    </WindowTitle>
-                    <WindowActions>
-                        <WindowAction Name="Close" />
-                    </WindowActions>
-                    <WindowContent>
-                        @if (!SelectedNextPageFlowRows.Any())
-                        {
-                            <div class="empty-state">No next-page transitions found for this page.</div>
-                        }
-                        else
-                        {
-                            <TelerikGrid Data="@SelectedNextPageFlowRows"
-                                         Pageable="true"
-                                         @bind-PageSize="_pageSize"
-                                         Sortable="false"
-                                         Size="@ThemeConstants.Grid.Size.Small">
-                                <GridColumns>
-                                    <GridColumn Field="@nameof(NextPageFlowRow.NextPage)" Title="Next Page" />
-                                    <GridColumn Field="@nameof(NextPageFlowRow.CountLabel)" Title="Transitions" Width="140px">
-                                        <Template Context="itemObj">
-                                            @{ var row = (NextPageFlowRow)itemObj; }
-                                            <div class="text-start">@row.CountLabel</div>
-                                        </Template>
-                                    </GridColumn>
-                                </GridColumns>
-                            </TelerikGrid>
-                        }
-                    </WindowContent>
-                </TelerikWindow>
-            }
         }
         else if (ActiveTab == TabName.IPs)
         {
@@ -468,15 +427,56 @@
 
             }
 
-            <UserHitsDetailPopup IsOpen="@_showUserDetailsPopup"
-                                 SelectedUser="@_selectedUser"
-                                 SelectedUserDisplayName="@_selectedUserDisplayName"
-                                 SelectedDays="@SelectedDays"
-                                 ReportData="@ReportData"
-                                 OnClose="CloseUserPopup" />
         }
     </div>
 </div>
+
+<UserHitsDetailPopup IsOpen="@_showUserDetailsPopup"
+                     SelectedUser="@_selectedUser"
+                     SelectedUserDisplayName="@_selectedUserDisplayName"
+                     SelectedDays="@SelectedDays"
+                     ReportData="@ReportData"
+                     OnClose="CloseUserPopup" />
+
+<TelerikWindow Width="880px"
+               Height="560px"
+               Visible="@_showNextPageFlowPopup"
+               VisibleChanged="OnNextPageFlowVisibleChanged"
+               Modal="true"
+               Draggable="true"
+               Resizable="true"
+               Class="popup-window popup-window--flow">
+    <WindowTitle>
+        Next Page Flow — @_selectedFlowPage
+    </WindowTitle>
+    <WindowActions>
+        <WindowAction Name="Close" />
+    </WindowActions>
+    <WindowContent>
+        @if (!SelectedNextPageFlowRows.Any())
+        {
+            <div class="empty-state">No next-page transitions found for this page.</div>
+        }
+        else
+        {
+            <TelerikGrid Data="@SelectedNextPageFlowRows"
+                         Pageable="true"
+                         @bind-PageSize="_pageSize"
+                         Sortable="false"
+                         Size="@ThemeConstants.Grid.Size.Small">
+                <GridColumns>
+                    <GridColumn Field="@nameof(NextPageFlowRow.NextPage)" Title="Next Page" />
+                    <GridColumn Field="@nameof(NextPageFlowRow.CountLabel)" Title="Transitions" Width="140px">
+                        <Template Context="itemObj">
+                            @{ var row = (NextPageFlowRow)itemObj; }
+                            <div class="text-start">@row.CountLabel</div>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </TelerikGrid>
+        }
+    </WindowContent>
+</TelerikWindow>
 
 <style>
     .report-tabs {
@@ -981,6 +981,12 @@
     {
         _showNextPageFlowPopup = false;
         _selectedFlowPage = "";
+    }
+
+    private void OnNextPageFlowVisibleChanged(bool visible)
+    {
+        if (!visible)
+            CloseNextPageFlowPopup();
     }
 
     private void CloseAllPopups()

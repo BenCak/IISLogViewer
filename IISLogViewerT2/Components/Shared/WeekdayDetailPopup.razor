@@ -5,6 +5,7 @@
     <TelerikWindow Width="1020px"
                    Height="680px"
                    Visible="@IsOpen"
+                   VisibleChanged="OnWindowVisibleChanged"
                    Modal="true"
                    Draggable="true"
                    Resizable="true"
@@ -246,6 +247,14 @@
         source.Select(x => new ItemHitRow(x.Key, x.Value)).ToList();
 
     private Task Close() => OnClose.InvokeAsync();
+
+    private Task OnWindowVisibleChanged(bool visible)
+    {
+        if (!visible)
+            return Close();
+
+        return Task.CompletedTask;
+    }
 
     private sealed record ItemHitRow(string Item, int Hits);
     private sealed record HourHitRow(string HourLabel, int Hits);
