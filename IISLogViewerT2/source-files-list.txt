@@ -22,4 +22,3 @@ Services/DnnMappings.cs
 Services/LogParserService.cs
 Services/SelectionState.cs
 wwwroot/app.css
-wwwroot/bootstrap/bootstrap.min.css
