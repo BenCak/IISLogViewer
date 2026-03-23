@@ -535,7 +535,7 @@
                          !string.IsNullOrWhiteSpace(e.PopupName) &&
                          e.PopupName != "-"
                 ? e.PopupName
-                : e.Action;
+                : FormatPageAction(e.Action, e.TabName, e.ModuleName);
 
             if (result.Count == 0 || !string.Equals(result[^1].Action, action, StringComparison.OrdinalIgnoreCase))
             {
@@ -563,6 +563,25 @@
         }
 
         return result;
+    }
+
+    private static string FormatPageAction(string action, string tabName, string moduleName)
+    {
+        // Extract just the stem from the action (e.g., /Default.aspx from /Default.aspx?TabID=51&ModuleID=273)
+        var stem = action.Split('?')[0];
+
+        var parts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(tabName) && tabName != "-")
+            parts.Add(tabName);
+
+        if (!string.IsNullOrWhiteSpace(moduleName) && moduleName != "-")
+            parts.Add(moduleName);
+
+        if (parts.Count == 0)
+            return stem;  // Just the stem if no tab/module info
+
+        return $"{stem} ({string.Join(", ", parts)})";
     }
 
     private sealed class CombinedTimelineRow
