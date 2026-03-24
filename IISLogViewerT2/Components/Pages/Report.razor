@@ -411,6 +411,10 @@
                                    @onclick:preventDefault="true"
                                    @onclick="() => OpenUserPopup(row.UserName)">
                                     @row.DisplayName
+                                    @if (_loadingUserName == row.UserName)
+                                    {
+                                        <TelerikLoader Size="@ThemeConstants.Loader.Size.Small" Type="@LoaderType.Pulsing" Class="user-link-spinner" />
+                                    }
                                 </a>
                                 @if (!string.IsNullOrWhiteSpace(row.Email))
                                 {
@@ -446,7 +450,8 @@
                      SelectedUserDisplayName="@_selectedUserDisplayName"
                      SelectedDays="@SelectedDays"
                      ReportData="@ReportData"
-                     OnClose="CloseUserPopup" />
+                     OnClose="CloseUserPopup"
+                     OnReady="() => _loadingUserName = string.Empty" />
 
 <TelerikWindow Width="880px"
                Height="560px"
@@ -575,6 +580,12 @@
         outline: 2px solid color-mix(in srgb, var(--kendo-color-primary, #0d6efd) 45%, transparent);
         outline-offset: 2px;
         border-radius: 4px;
+    }
+
+    .user-link-spinner {
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 0.3rem;
     }
 
     @@media (max-width: 720px) {
@@ -853,6 +864,7 @@
     private bool _showUserDetailsPopup;
     private string _selectedUser = "";
     private string _selectedUserDisplayName = "";
+    private string _loadingUserName = "";
     private bool _showNextPageFlowPopup;
     private string _selectedFlowPage = "";
 
@@ -987,6 +999,7 @@
         if (string.IsNullOrWhiteSpace(userName))
             return;
 
+        _loadingUserName = userName;
         _selectedUser = userName;
         _selectedUserDisplayName = LogParserService.GetUserDisplayName(userName);
         _showUserDetailsPopup = true;
@@ -994,6 +1007,7 @@
 
     private void CloseUserPopup()
     {
+        _loadingUserName = "";
         _showUserDetailsPopup = false;
     }
 

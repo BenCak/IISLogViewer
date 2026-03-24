@@ -17,6 +17,16 @@
         <WindowContent>
             <div class="text-muted small mb-2">@HeaderSubTitle</div>
 
+            @if (_isInitializing)
+            {
+                <div class="popup-global-loading">
+                    <TelerikLoader Size="@ThemeConstants.Loader.Size.Large" Type="@LoaderType.InfiniteSpinner" />
+                    <span>Loading user data…</span>
+                </div>
+            }
+            else
+            {
+
             <div class="user-peak-summary">
                 @if (PeakHourSummary is not null)
                 {
@@ -210,6 +220,8 @@
                 </TabStripTab>
             </TelerikTabStrip>
 
+            } @* end else (not initializing) *@
+
         </WindowContent>
     </TelerikWindow>
 }
@@ -260,6 +272,17 @@
         padding: 0.35rem 0.1rem;
     }
 
+    .popup-global-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem;
+        padding: 3rem 1rem;
+        color: var(--kendo-color-subtle, #666);
+        font-size: 0.95rem;
+    }
+
     .user-section__content {
         padding: 0.45rem 0.1rem 0.2rem;
     }
@@ -287,12 +310,16 @@
     [Parameter]
     public EventCallback OnClose { get; set; }
 
+    [Parameter]
+    public EventCallback OnReady { get; set; }
+
     private string _timelineUserSeed = "";
     private string _timelineSelectionSeed = "";
     private string _selectedTimelineDateKey = "";
     private List<TimelineDateOption> _timelineDateOptions = new();
     private List<UserTimelineRow> _timelineRows = new();
     private bool _timelineLoading;
+    private bool _isInitializing;
     private int _gridPageSize = 10;
 
     private const int MaxRows = 12;
@@ -362,7 +389,18 @@
 
     private async Task RefreshTimelineDatesAsync()
     {
-        var dates = await LogParserService.GetTimelineDatesForUser(SelectedUser);
+        _isInitializing = true;
+        StateHasChanged();
+        List<DateTime> dates;
+        try
+        {
+            dates = await LogParserService.GetTimelineDatesForUser(SelectedUser);
+        }
+        finally
+        {
+            _isInitializing = false;
+            await OnReady.InvokeAsync();
+        }
 
         var selectedDaySet = SelectedDays?
             .Select(d => d.Date)
@@ -376,6 +414,7 @@
             .ToList();
 
         _selectedTimelineDateKey = _timelineDateOptions.FirstOrDefault()?.Value ?? string.Empty;
+        StateHasChanged();
         await LoadTimelineAsync();
     }
 

@@ -356,63 +356,63 @@ namespace IISLogViewer.Services
         public Task<List<DateTime>> GetTimelineDatesForUser(string userName)
         {
             var normalizedUser = NormalizeUserName(userName);
-            var days = new HashSet<DateTime>();
 
             if (string.IsNullOrWhiteSpace(normalizedUser))
-                return Task.FromResult(days.ToList());
+                return Task.FromResult(new List<DateTime>());
 
-            var files = Directory.GetFiles(_logDirectory, "u_ex*.log", SearchOption.AllDirectories);
-            foreach (var path in files)
+            var logDir = _logDirectory;
+            return Task.Run(() =>
             {
-                var fileDate = ExtractDateFromFilename(Path.GetFileName(path));
-                if (!fileDate.HasValue)
-                    continue;
-
-                try
+                var days = new HashSet<DateTime>();
+                var files = Directory.GetFiles(logDir, "u_ex*.log", SearchOption.AllDirectories);
+                foreach (var path in files)
                 {
-                    string[] fields = Array.Empty<string>();
-                    using var reader = new StreamReader(path);
-                    string? line;
-                    var hasUser = false;
+                    var fileDate = ExtractDateFromFilename(Path.GetFileName(path));
+                    if (!fileDate.HasValue)
+                        continue;
 
-                    while ((line = reader.ReadLine()) != null)
+                    try
                     {
-                        if (line.StartsWith("#Fields:"))
+                        string[] fields = Array.Empty<string>();
+                        using var reader = new StreamReader(path);
+                        string? line;
+                        var hasUser = false;
+                        int userIndex = -1;
+
+                        while ((line = reader.ReadLine()) != null)
                         {
-                            fields = line.Substring(9).Trim().Split(' ');
-                            continue;
+                            if (line.StartsWith("#Fields:"))
+                            {
+                                fields = line.Substring(9).Trim().Split(' ');
+                                userIndex = Array.IndexOf(fields, "cs-username");
+                                continue;
+                            }
+
+                            if (line.StartsWith("#") || string.IsNullOrWhiteSpace(line) || fields.Length == 0 || userIndex < 0)
+                                continue;
+
+                            var parts = line.Split(' ');
+                            if (parts.Length != fields.Length)
+                                continue;
+
+                            if (string.Equals(NormalizeUserName(parts[userIndex]), normalizedUser, StringComparison.OrdinalIgnoreCase))
+                            {
+                                hasUser = true;
+                                break;
+                            }
                         }
 
-                        if (line.StartsWith("#") || string.IsNullOrWhiteSpace(line) || fields.Length == 0)
-                            continue;
-
-                        var parts = line.Split(' ');
-                        if (parts.Length != fields.Length)
-                            continue;
-
-                        var fieldMap = fields.Select((f, i) => new { f, i })
-                                            .ToDictionary(x => x.f, x => parts[x.i]);
-
-                        if (!fieldMap.TryGetValue("cs-username", out var rawUser))
-                            continue;
-
-                        if (string.Equals(NormalizeUserName(rawUser), normalizedUser, StringComparison.OrdinalIgnoreCase))
-                        {
-                            hasUser = true;
-                            break;
-                        }
+                        if (hasUser)
+                            days.Add(fileDate.Value.Date);
                     }
-
-                    if (hasUser)
-                        days.Add(fileDate.Value.Date);
+                    catch
+                    {
+                        // Ignore malformed files while collecting user-active dates.
+                    }
                 }
-                catch
-                {
-                    // Ignore malformed files while collecting user-active dates.
-                }
-            }
 
-            return Task.FromResult(days.OrderByDescending(d => d).ToList());
+                return days.OrderByDescending(d => d).ToList();
+            });
         }
 
         private static bool IsIgnoredRequest(string uriStem)
