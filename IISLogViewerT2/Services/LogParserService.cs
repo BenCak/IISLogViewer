@@ -951,6 +951,9 @@ namespace IISLogViewer.Services
                                 popupType = pct;
                         }
 
+                        var isPopupRequest = !string.IsNullOrEmpty(uriQuery)
+                            && uriQuery.Contains("PopupControlType=", StringComparison.OrdinalIgnoreCase);
+
                         // Track Error Pages (400+)
                         if (statusCode >= 400)
                         {
@@ -982,6 +985,27 @@ namespace IISLogViewer.Services
                                 IncrementNestedBucket(report.WeekdayDocumentHits, weekdayForBreakdown.Value, uriStem);
 
                             IncrementNestedBucket(report.UserDocumentHits, userName, uriStem);
+                        }
+                        else if (isPopupRequest)
+                        {
+                            // Popup container requests should be reported under popup metrics only.
+                            string popLabel;
+                            if (popupType.HasValue)
+                                popLabel = DnnMappings.PopupControlTypes.TryGetValue(popupType.Value, out var pn) ? pn : $"Type {popupType}";
+                            else
+                                popLabel = "Unknown Popup Type";
+
+                            if (!report.PopupHits.ContainsKey(popLabel))
+                                report.PopupHits[popLabel] = 0;
+                            report.PopupHits[popLabel]++;
+
+                            IncrementNestedBucket(report.UserPopupHits, userName, popLabel);
+
+                            if (hourForBreakdown.HasValue)
+                                IncrementHourlyBucket(report.HourlyPopupHits, hourForBreakdown.Value, popLabel);
+
+                            if (weekdayForBreakdown.HasValue)
+                                IncrementNestedBucket(report.WeekdayPopupHits, weekdayForBreakdown.Value, popLabel);
                         }
                         else
                         {
@@ -1052,22 +1076,6 @@ namespace IISLogViewer.Services
                                 report.ModuleHits[moduleName]++;
                             }
 
-                            // Track Popups
-                            if (popupType.HasValue)
-                            {
-                                string popLabel = DnnMappings.PopupControlTypes.TryGetValue(popupType.Value, out var pn) ? pn : $"Type {popupType}";
-                                if (!report.PopupHits.ContainsKey(popLabel))
-                                    report.PopupHits[popLabel] = 0;
-                                report.PopupHits[popLabel]++;
-
-                                IncrementNestedBucket(report.UserPopupHits, userName, popLabel);
-
-                                if (hourForBreakdown.HasValue)
-                                    IncrementHourlyBucket(report.HourlyPopupHits, hourForBreakdown.Value, popLabel);
-
-                                if (weekdayForBreakdown.HasValue)
-                                    IncrementNestedBucket(report.WeekdayPopupHits, weekdayForBreakdown.Value, popLabel);
-                            }
                         }
                     }
                     catch
