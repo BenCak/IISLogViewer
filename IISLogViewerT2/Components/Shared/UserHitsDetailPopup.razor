@@ -535,7 +535,7 @@
                          !string.IsNullOrWhiteSpace(e.PopupName) &&
                          e.PopupName != "-"
                 ? e.PopupName
-                : FormatPageAction(e.Action, e.TabName, e.ModuleName);
+                : e.Action;
 
             if (result.Count == 0 || !string.Equals(result[^1].Action, action, StringComparison.OrdinalIgnoreCase))
             {

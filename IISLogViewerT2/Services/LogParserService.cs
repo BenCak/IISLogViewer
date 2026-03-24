@@ -415,6 +415,23 @@ namespace IISLogViewer.Services
             return Task.FromResult(days.OrderByDescending(d => d).ToList());
         }
 
+        private static bool IsIgnoredRequest(string uriStem)
+        {
+            if (string.IsNullOrWhiteSpace(uriStem))
+                return true;
+
+            if (DnnMappings.IgnoredPathFragments.Any(fragment =>
+                    uriStem.Contains(fragment, StringComparison.OrdinalIgnoreCase)))
+                return true;
+
+            var fileName = Path.GetFileName(uriStem);
+            if (!string.IsNullOrWhiteSpace(fileName) && DnnMappings.IgnoredFileNames.Contains(fileName))
+                return true;
+
+            var extension = Path.GetExtension(uriStem).ToLowerInvariant();
+            return DnnMappings.IgnoredExtensions.Contains(extension);
+        }
+
         private class AggregateTracker
         {
             public int Hits { get; set; }
@@ -467,12 +484,10 @@ namespace IISLogViewer.Services
                         if (fieldMap.TryGetValue("time-taken", out var timeStr))
                             int.TryParse(timeStr, out durationMs);
 
-                        if (string.IsNullOrWhiteSpace(uriStem))
+                        if (IsIgnoredRequest(uriStem))
                             continue;
 
                         var ext = Path.GetExtension(uriStem).ToLowerInvariant();
-                        if (DnnMappings.IgnoredExtensions.Contains(ext))
-                            continue;
 
                         var eventType = DnnMappings.DocumentExtensions.Contains(ext) ? "Document" : "Page";
                         if (!string.IsNullOrEmpty(uriQuery) && uriQuery.Contains("PopupControlType=", StringComparison.OrdinalIgnoreCase))
@@ -854,6 +869,9 @@ namespace IISLogViewer.Services
                             timeTaken = tt;
 
                         
+                        if (IsIgnoredRequest(uriStem))
+                            continue;
+
                         report.TotalHits++;
 
                         // Track hourly traffic in configured local timezone (IIS timestamp is UTC)
@@ -902,13 +920,6 @@ namespace IISLogViewer.Services
 
                         // Determine file extension
                         string fileExtension = Path.GetExtension(uriStem).ToLowerInvariant();
-
-                        // Skip ignored extensions and empty/dash stems
-                        if (string.IsNullOrEmpty(uriStem) ||
-                            DnnMappings.IgnoredExtensions.Contains(fileExtension))
-                        {
-                            continue;
-                        }
 
                         // Determine Entry Type
                         bool isDocument = DnnMappings.DocumentExtensions.Contains(fileExtension);

@@ -51,6 +51,32 @@ namespace IISLogViewer.Services
             ".ico", ".woff", ".woff2", ".ttf", ".eot", ".svg", ".map"
         };
 
+        public static readonly HashSet<string> IgnoredFileNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "robot.txt",
+            "robots.txt",
+            ".env",
+            "xmlrpc.php",
+            "wp-login.php",
+            "wp-config.php",
+            "win.ini",
+            "winnt.ini",
+            "boaform"
+        };
+
+        public static readonly string[] IgnoredPathFragments =
+        {
+            "/cgi-bin/",
+            "/cg-bin/",
+            "/phpmyadmin/",
+            "/pma/",
+            "/wordpress/",
+            "/wp-admin/",
+            "/.git/",
+            "/.env",
+            "/boaform/"
+        };
+
         // Extensions that get their own special section
         public static readonly HashSet<string> DocumentExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
