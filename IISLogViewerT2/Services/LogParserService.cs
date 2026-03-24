@@ -1091,18 +1091,47 @@ namespace IISLogViewer.Services
 
         private string BuildPageLabel(string stem, string query, string? tabName, string? moduleName, string? popupLabel)
         {
-            var formattedQuery = string.IsNullOrEmpty(query) ? "" : $"?{query}";
+            var formattedQuery = BuildDisplayQueryString(query);
 
             if (!string.IsNullOrWhiteSpace(popupLabel))
-                return $"{popupLabel}";
+            {
+                if (tabName != null && moduleName != null)
+                    return $"{stem} (Popup={popupLabel}, Tab={tabName}, Module={moduleName}){formattedQuery}";
+
+                if (tabName != null)
+                    return $"{stem} (Popup={popupLabel}, Tab={tabName}){formattedQuery}";
+
+                return $"{stem} (Popup={popupLabel}){formattedQuery}";
+            }
 
             if (tabName != null && moduleName != null)
-                return $"{stem}{formattedQuery} (Tab={tabName}, Module={moduleName})";
+                return $"{stem} (Tab={tabName}, Module={moduleName}){formattedQuery}";
 
             if (tabName != null)
-                return $"{stem}{formattedQuery} (Tab={tabName})";
+                return $"{stem} (Tab={tabName}){formattedQuery}";
 
-            return stem;
+            return $"{stem}{formattedQuery}";
+        }
+
+        private static string BuildDisplayQueryString(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return "";
+
+            var filtered = query
+                .Split('&', StringSplitOptions.RemoveEmptyEntries)
+                .Select(p => p.Trim())
+                .Where(p => p.Length > 0)
+                .Where(p =>
+                {
+                    var eqIndex = p.IndexOf('=');
+                    var key = eqIndex >= 0 ? p[..eqIndex] : p;
+                    return !key.Equals("TabID", StringComparison.OrdinalIgnoreCase)
+                        && !key.Equals("ModuleID", StringComparison.OrdinalIgnoreCase);
+                })
+                .ToList();
+
+            return filtered.Count == 0 ? "" : $"?{string.Join("&", filtered)}";
         }
 
         private static void IncrementHourlyBucket(Dictionary<int, Dictionary<string, int>> map, int hour, string key)

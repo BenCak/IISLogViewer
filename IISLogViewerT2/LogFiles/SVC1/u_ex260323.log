@@ -1,0 +1,16 @@
+#Software: Microsoft Internet Information Services 10.0
+#Version: 1.0
+#Date: 2026-03-23 00:00:00
+#Fields: date time s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs(User-Agent) sc-status sc-substatus sc-win32-status time-taken
+2026-03-23 08:15:22 192.168.1.10 GET /Default.aspx TabID=23&ModuleID=172&RequestID=REQ-100245&CustomerID=CUST-9001 80 CONTOSO\\jdoe 10.10.4.21 Mozilla/5.0 200 0 0 164
+2026-03-23 08:16:41 192.168.1.10 GET /Default.aspx TabID=23&ModuleID=172&RequestID=REQ-100246&CustomerID=CUST-9001&Mode=Edit 80 CONTOSO\\jdoe 10.10.4.21 Mozilla/5.0 200 0 0 213
+2026-03-23 08:17:19 192.168.1.10 GET /Default.aspx TabID=23&ModuleID=172&PopupControlType=1&RequestID=REQ-100246&CustomerID=CUST-9001 80 CONTOSO\\jdoe 10.10.4.21 Mozilla/5.0 200 0 0 189
+2026-03-23 09:02:55 192.168.1.10 GET /Default.aspx TabID=41&ModuleID=233&RequestID=REQ-100260&CustomerID=CUST-9055&Region=NA 80 CONTOSO\\asmith 10.10.7.9 Mozilla/5.0 200 0 0 145
+2026-03-23 09:05:11 192.168.1.10 GET /Default.aspx TabID=41&ModuleID=233&RequestID=REQ-100261&CustomerID=CUST-9055&Region=NA&Priority=High 80 CONTOSO\\asmith 10.10.7.9 Mozilla/5.0 200 0 0 201
+2026-03-23 09:06:44 192.168.1.10 GET /Default.aspx TabID=41&ModuleID=233&PopupControlType=2&RequestID=REQ-100261&CustomerID=CUST-9055&Region=NA 80 CONTOSO\\asmith 10.10.7.9 Mozilla/5.0 200 0 0 267
+2026-03-23 10:22:03 192.168.1.10 GET /Default.aspx TabID=30&ModuleID=57&RequestID=REQ-100300&CustomerID=CUST-9100&View=Summary 80 CONTOSO\\bjones 10.10.9.17 Mozilla/5.0 200 0 0 132
+2026-03-23 10:24:28 192.168.1.10 GET /Default.aspx TabID=30&ModuleID=57&RequestID=REQ-100301&CustomerID=CUST-9100&View=Detail&Trace=1 80 CONTOSO\\bjones 10.10.9.17 Mozilla/5.0 200 0 0 178
+2026-03-23 10:25:52 192.168.1.10 GET /Default.aspx TabID=30&ModuleID=57&PopupControlType=2&RequestID=REQ-100301&CustomerID=CUST-9100&View=Detail 80 CONTOSO\\bjones 10.10.9.17 Mozilla/5.0 200 0 0 244
+2026-03-23 11:41:37 192.168.1.10 GET /Default.aspx TabID=44&ModuleID=183&RequestID=REQ-100355&CustomerID=CUST-9204&Workflow=Approve 80 CONTOSO\\jdoe 10.10.4.21 Mozilla/5.0 200 0 0 159
+2026-03-23 11:42:09 192.168.1.10 GET /Default.aspx TabID=44&ModuleID=183&RequestID=REQ-100355&CustomerID=CUST-9204&Workflow=Approve&Step=2 80 CONTOSO\\jdoe 10.10.4.21 Mozilla/5.0 200 0 0 206
+2026-03-23 11:44:23 192.168.1.10 GET /Default.aspx TabID=44&ModuleID=183&PopupControlType=3&RequestID=REQ-100355&CustomerID=CUST-9204&Workflow=Approve 80 CONTOSO\\jdoe 10.10.4.21 Mozilla/5.0 200 0 0 231
