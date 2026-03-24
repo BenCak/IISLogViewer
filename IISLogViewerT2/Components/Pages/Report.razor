@@ -51,6 +51,12 @@
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
+                    <GridToolBarTemplate>
+                        <GridCommandButton Command="ExcelExport" Icon="@SvgIcon.FileExcel">Export to Excel</GridCommandButton>
+                    </GridToolBarTemplate>
+                    <GridExport>
+                        <GridExcelExport FileName="pages" AllPages="true" />
+                    </GridExport>
                     <GridColumns>
                         <GridColumn Field="@nameof(TopPageInsightRow.Page)" Title="Page" />
                         <GridColumn Field="@nameof(TopPageInsightRow.HitsLabel)" Title="Hits" Width="120px">
@@ -94,6 +100,7 @@
                                Placeholder="Search IPs"
                                LabelHeader="IP Address"
                                ValueHeader="Hits"
+                               ExportFileName="ip-addresses"
                                @bind-CurrentPage="CurrentGridPage"
                                SearchValue="@_searchIPs"
                                SearchValueChanged="@(v => _searchIPs = v)"
@@ -105,6 +112,7 @@
                                Placeholder="Search errors"
                                LabelHeader="Page"
                                ValueHeader="Hits"
+                               ExportFileName="error-pages"
                                @bind-CurrentPage="CurrentGridPage"
                                SearchValue="@_searchErrors"
                                SearchValueChanged="@(v => _searchErrors = v)"
@@ -136,6 +144,12 @@
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
+                    <GridToolBarTemplate>
+                        <GridCommandButton Command="ExcelExport" Icon="@SvgIcon.FileExcel">Export to Excel</GridCommandButton>
+                    </GridToolBarTemplate>
+                    <GridExport>
+                        <GridExcelExport FileName="documents" AllPages="true" />
+                    </GridExport>
                     <GridColumns>
                         <GridColumn Field="@nameof(DocumentRow.File)">
                             <HeaderTemplate>
@@ -180,6 +194,7 @@
                                Placeholder="Search popups"
                                LabelHeader="Type"
                                ValueHeader="Hits"
+                               ExportFileName="popups"
                                @bind-CurrentPage="CurrentGridPage"
                                SearchValue="@_searchPopups"
                                SearchValueChanged="@(v => _searchPopups = v)"
@@ -211,6 +226,12 @@
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
+                    <GridToolBarTemplate>
+                        <GridCommandButton Command="ExcelExport" Icon="@SvgIcon.FileExcel">Export to Excel</GridCommandButton>
+                    </GridToolBarTemplate>
+                    <GridExport>
+                        <GridExcelExport FileName="status-codes" AllPages="true" />
+                    </GridExport>
                     <GridColumns>
                         <GridColumn Field="@nameof(StatusRow.StatusDisplay)" Width="220px">
                             <HeaderTemplate>
@@ -257,6 +278,12 @@
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
+                    <GridToolBarTemplate>
+                        <GridCommandButton Command="ExcelExport" Icon="@SvgIcon.FileExcel">Export to Excel</GridCommandButton>
+                    </GridToolBarTemplate>
+                    <GridExport>
+                        <GridExcelExport FileName="slow-pages" AllPages="true" />
+                    </GridExport>
                     <GridColumns>
                         <GridColumn Field="@nameof(SlowPageRow.Page)">
                             <HeaderTemplate>
@@ -306,6 +333,12 @@
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
+                    <GridToolBarTemplate>
+                        <GridCommandButton Command="ExcelExport" Icon="@SvgIcon.FileExcel">Export to Excel</GridCommandButton>
+                    </GridToolBarTemplate>
+                    <GridExport>
+                        <GridExcelExport FileName="hourly-hits" AllPages="true" />
+                    </GridExport>
                     <GridColumns>
                         <GridColumn Field="@nameof(HourRow.HourLabel)" Width="120px">
                             <HeaderTemplate>
@@ -347,6 +380,12 @@
             </div>
 
             <TelerikGrid Data="@WeekdayRows" Pageable="true" @bind-Page="CurrentGridPage" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+                <GridToolBarTemplate>
+                    <GridCommandButton Command="ExcelExport" Icon="@SvgIcon.FileExcel">Export to Excel</GridCommandButton>
+                </GridToolBarTemplate>
+                <GridExport>
+                    <GridExcelExport FileName="weekdays" AllPages="true" />
+                </GridExport>
                 <GridColumns>
                     <GridColumn Field="@nameof(WeekdayListRow.DayLabel)" Title="Day">
                         <Template Context="itemObj">
@@ -399,6 +438,12 @@
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
+                    <GridToolBarTemplate>
+                        <GridCommandButton Command="ExcelExport" Icon="@SvgIcon.FileExcel">Export to Excel</GridCommandButton>
+                    </GridToolBarTemplate>
+                    <GridExport>
+                        <GridExcelExport FileName="users" AllPages="true" />
+                    </GridExport>
                     <GridColumns>
                         <GridColumn Field="@nameof(UserRow.DisplayName)">
                             <HeaderTemplate>
@@ -479,6 +524,12 @@
                          @bind-PageSize="_pageSize"
                          Sortable="false"
                          Size="@ThemeConstants.Grid.Size.Small">
+                <GridToolBarTemplate>
+                    <GridCommandButton Command="ExcelExport" Icon="@SvgIcon.FileExcel">Export to Excel</GridCommandButton>
+                </GridToolBarTemplate>
+                <GridExport>
+                    <GridExcelExport FileName="page-flow" AllPages="true" />
+                </GridExport>
                 <GridColumns>
                     <GridColumn Field="@nameof(NextPageFlowRow.NextPage)" Title="Next Page" />
                     <GridColumn Field="@nameof(NextPageFlowRow.CountLabel)" Title="Transitions" Width="140px">
@@ -840,7 +891,7 @@
     private sealed record NextPageFlowRow(string NextPage, string CountLabel);
     private sealed record UserRow(string UserName, string DisplayName, string Department, string Email, string HitsLabel);
 
-    private int _pageSize = 10;
+    private int _pageSize = 20;
 
     private string _docSortField = nameof(DocumentRow.DownloadsLabel);
     private bool _docSortDesc = true;
