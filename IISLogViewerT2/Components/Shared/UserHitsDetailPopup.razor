@@ -17,13 +17,18 @@
         <WindowContent>
             <div class="text-muted small mb-2">@HeaderSubTitle</div>
 
-            @if (PeakHourSummary is not null)
-            {
-                <div class="user-peak-summary">
-                    Most Active Hour: <strong>@PeakHourSummary.HourLabel</strong>
-                    <span class="text-muted">(@PeakHourSummary.Hits.ToString("N0") hits, @PeakHourSummary.PercentageLabel)</span>
-                </div>
-            }
+            <div class="user-peak-summary">
+                @if (PeakHourSummary is not null)
+                {
+                    <span>Most Active Hour: <strong>@PeakHourSummary.HourLabel</strong>
+                        <span class="text-muted">(@PeakHourSummary.Hits.ToString("N0") hits, @PeakHourSummary.PercentageLabel)</span>
+                    </span>
+                    <span class="mx-2 text-muted">·</span>
+                }
+                <span>Traffic Share: <strong>@TrafficSharePercent.ToString("F1")%</strong>
+                    <span class="text-muted">(@SelectedUserTotalHits.ToString("N0") of @(ReportData?.TotalHits.ToString("N0")) total hits)</span>
+                </span>
+            </div>
 
             <TelerikTabStrip Class="popup-tabs">
                 <TabStripTab Title="🔥 Top Pages">
@@ -324,6 +329,10 @@
     private PeakHourInfo? PeakHourSummary => BuildPeakHour(ReportData?.UserHourlyHits, SelectedUser, SelectedUserTotalHits);
 
     private int SelectedUserTotalHits => ReportData?.UserHits.TryGetValue(SelectedUser, out var hits) == true ? hits : 0;
+
+    private double TrafficSharePercent => ReportData?.TotalHits > 0
+        ? Math.Round(SelectedUserTotalHits * 100.0 / ReportData.TotalHits, 1)
+        : 0.0;
 
     private List<WeekdayRow> WeekdayRows => BuildWeekdayRows(ReportData?.UserWeekdayHits, SelectedUser, SelectedUserTotalHits).ToList();
 

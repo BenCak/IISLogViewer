@@ -521,7 +521,12 @@ namespace IISLogViewer.Services
                         {
                             TimestampLocal = localTimestamp,
                             UserName = userName,
-                            Action = string.IsNullOrEmpty(uriQuery) ? uriStem : $"{uriStem}?{uriQuery}",
+                            Action = BuildPageLabel(
+                                uriStem,
+                                uriQuery,
+                                tabName == "-" ? null : tabName,
+                                moduleName == "-" ? null : moduleName,
+                                eventType == "Popup" ? (popupName == "-" ? null : popupName) : null),
                             EventType = eventType,
                             TabName = tabName,
                             ModuleName = moduleName,
