@@ -48,7 +48,8 @@ namespace IISLogViewer.Services
         public static readonly HashSet<string> IgnoredExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".axd", ".css", ".js", ".png", ".jpg", ".jpeg", ".gif",
-            ".ico", ".woff", ".woff2", ".ttf", ".eot", ".svg", ".map"
+            ".ico", ".woff", ".woff2", ".ttf", ".eot", ".svg", ".map",
+            ".jsp", ".cfm"
         };
 
         public static readonly HashSet<string> IgnoredFileNames = new(StringComparer.OrdinalIgnoreCase)

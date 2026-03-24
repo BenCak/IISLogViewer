@@ -981,11 +981,7 @@ namespace IISLogViewer.Services
                         else
                         {
                             // It's a Page
-                            string? popupLabel = null;
-                            if (popupType.HasValue)
-                                popupLabel = DnnMappings.PopupControlTypes.TryGetValue(popupType.Value, out var pn) ? pn : $"Type {popupType.Value}";
-
-                            string pageLabel = BuildPageLabel(uriStem, uriQuery, tabName, moduleName, popupLabel);
+                            string pageLabel = BuildPageLabel(uriStem, uriQuery, tabName, moduleName, null);
 
                             if (!report.PageHits.ContainsKey(pageLabel))
                                 report.PageHits[pageLabel] = 0;

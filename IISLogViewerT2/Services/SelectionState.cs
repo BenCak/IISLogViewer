@@ -4,6 +4,7 @@ namespace IISLogViewer.Services
     {
         public HashSet<DateTime> SelectedDays { get; set; } = new();
         public string CurrentFolder { get; set; } = "";
+        public int ReportGridPage { get; set; } = 1;
         public event Action? OnChange;
         public event Action? OnFolderChanged;
 

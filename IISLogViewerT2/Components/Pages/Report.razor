@@ -1,4 +1,5 @@
 @inject IISLogViewer.Services.LogParserService LogParserService
+@inject IISLogViewer.Services.SelectionState SelectionState
 
 <div class="report-tabs">
     <TelerikTabStrip @bind-ActiveTabIndex="ActiveTabIndex" Class="report-tabs__strip">
@@ -46,6 +47,7 @@
             {
                 <TelerikGrid Data="@FilteredTopPageRows"
                              Pageable="true"
+                             @bind-Page="CurrentGridPage"
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
@@ -128,6 +130,7 @@
             {
                 <TelerikGrid Data="@SortedDocuments"
                              Pageable="true"
+                             @bind-Page="CurrentGridPage"
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
@@ -201,6 +204,7 @@
             {
                 <TelerikGrid Data="@SortedStatuses"
                              Pageable="true"
+                             @bind-Page="CurrentGridPage"
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
@@ -246,6 +250,7 @@
             {
                 <TelerikGrid Data="@SortedSlowPages"
                              Pageable="true"
+                             @bind-Page="CurrentGridPage"
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
@@ -294,6 +299,7 @@
             {
                 <TelerikGrid Data="@SortedHours"
                              Pageable="true"
+                             @bind-Page="CurrentGridPage"
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
@@ -337,7 +343,7 @@
                 <div><h3>Day Of Week</h3></div>
             </div>
 
-            <TelerikGrid Data="@WeekdayRows" Pageable="true" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+            <TelerikGrid Data="@WeekdayRows" Pageable="true" @bind-Page="CurrentGridPage" @bind-PageSize="_pageSize" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
                 <GridColumns>
                     <GridColumn Field="@nameof(WeekdayListRow.DayLabel)" Title="Day">
                         <Template Context="itemObj">
@@ -386,6 +392,7 @@
             {
                 <TelerikGrid Data="@SortedUsers"
                              Pageable="true"
+                             @bind-Page="CurrentGridPage"
                              @bind-PageSize="_pageSize"
                              Sortable="false"
                              Size="@ThemeConstants.Grid.Size.Small">
@@ -611,6 +618,12 @@
     };
 
     private int _activeTabIndex;
+
+    private int CurrentGridPage
+    {
+        get => Math.Max(1, SelectionState.ReportGridPage);
+        set => SelectionState.ReportGridPage = value < 1 ? 1 : value;
+    }
 
     private int ActiveTabIndex
     {
