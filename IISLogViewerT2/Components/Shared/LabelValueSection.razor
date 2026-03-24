@@ -20,6 +20,7 @@ else
 {
     <TelerikGrid Data="@SortedRows"
                  Pageable="true"
+                 @bind-Page="CurrentPage"
                  @bind-PageSize="_pageSize"
                  Sortable="false"
                  Resizable="true"
@@ -59,6 +60,8 @@ else
 
     [Parameter] public string SearchValue { get; set; } = "";
     [Parameter] public EventCallback<string> SearchValueChanged { get; set; }
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public EventCallback<int> CurrentPageChanged { get; set; }
 
     [Parameter] public IEnumerable<LabelValueRow> Rows { get; set; } = Array.Empty<LabelValueRow>();
 

@@ -94,6 +94,7 @@
                                Placeholder="Search IPs"
                                LabelHeader="IP Address"
                                ValueHeader="Hits"
+                               @bind-CurrentPage="CurrentGridPage"
                                SearchValue="@_searchIPs"
                                SearchValueChanged="@(v => _searchIPs = v)"
                                Rows="@FilteredIpRows" />
@@ -104,6 +105,7 @@
                                Placeholder="Search errors"
                                LabelHeader="Page"
                                ValueHeader="Hits"
+                               @bind-CurrentPage="CurrentGridPage"
                                SearchValue="@_searchErrors"
                                SearchValueChanged="@(v => _searchErrors = v)"
                                Rows="@FilteredErrorRows" />
@@ -178,6 +180,7 @@
                                Placeholder="Search popups"
                                LabelHeader="Type"
                                ValueHeader="Hits"
+                               @bind-CurrentPage="CurrentGridPage"
                                SearchValue="@_searchPopups"
                                SearchValueChanged="@(v => _searchPopups = v)"
                                Rows="@FilteredPopupRows" />
@@ -619,10 +622,23 @@
 
     private int _activeTabIndex;
 
+    private string ReportPageStateKey
+    {
+        get
+        {
+            var folder = SelectionState.CurrentFolder ?? string.Empty;
+            var days = SelectedDays ?? Enumerable.Empty<DateTime>();
+            var dayKey = string.Join("|", days.Select(d => d.Date).OrderBy(d => d).Select(d => d.ToString("yyyy-MM-dd")));
+            return $"{folder}::{dayKey}";
+        }
+    }
+
+    private string ActiveGridStateKey => $"{ReportPageStateKey}::{ActiveTab}";
+
     private int CurrentGridPage
     {
-        get => Math.Max(1, SelectionState.ReportGridPage);
-        set => SelectionState.ReportGridPage = value < 1 ? 1 : value;
+        get => SelectionState.GetReportGridPage(ActiveGridStateKey);
+        set => SelectionState.SetReportGridPage(ActiveGridStateKey, value);
     }
 
     private int ActiveTabIndex
