@@ -535,6 +535,8 @@ namespace IISLogViewer.Services
                                 uriQuery,
                                 tabId,
                                 moduleId,
+                                tabName == "-" ? null : tabName,
+                                moduleName == "-" ? null : moduleName,
                                 eventType == "Popup" ? (popupName == "-" ? null : popupName) : null),
                             EventType = eventType,
                             TabName = tabName,
@@ -1031,7 +1033,7 @@ namespace IISLogViewer.Services
                             if (!DnnMappings.AllowedPageExtensions.Contains(fileExtension))
                                 continue;
 
-                            string pageLabel = BuildPageLabel(uriStem, uriQuery, tabId, moduleId, null);
+                            string pageLabel = BuildPageLabel(uriStem, uriQuery, tabId, moduleId, tabName, moduleName, null);
 
                             if (!report.PageHits.ContainsKey(pageLabel))
                                 report.PageHits[pageLabel] = 0;
@@ -1118,28 +1120,32 @@ namespace IISLogViewer.Services
             };
         }
 
-        private string BuildPageLabel(string stem, string query, int? tabId, int? moduleId, string? popupLabel)
+        private string BuildPageLabel(string stem, string query, int? tabId, int? moduleId, string? tabName, string? moduleName, string? popupLabel)
         {
             var formattedQuery = BuildDisplayQueryString(query);
-            var tabToken = tabId.HasValue ? $"TabID={tabId.Value}" : null;
-            var moduleToken = moduleId.HasValue ? $"ModuleID={moduleId.Value}" : null;
+            var tabLabel = !string.IsNullOrWhiteSpace(tabName)
+                ? tabName
+                : (tabId.HasValue ? $"Tab {tabId.Value}" : null);
+            var moduleLabel = !string.IsNullOrWhiteSpace(moduleName)
+                ? moduleName
+                : (moduleId.HasValue ? $"Module {moduleId.Value}" : null);
 
             if (!string.IsNullOrWhiteSpace(popupLabel))
             {
-                if (tabToken != null && moduleToken != null)
-                    return $"{stem} (Popup={popupLabel}, {tabToken}, {moduleToken}){formattedQuery}";
+                if (tabLabel != null && moduleLabel != null)
+                    return $"{stem} (Popup={popupLabel}, Tab={tabLabel}, Module={moduleLabel}){formattedQuery}";
 
-                if (tabToken != null)
-                    return $"{stem} (Popup={popupLabel}, {tabToken}){formattedQuery}";
+                if (tabLabel != null)
+                    return $"{stem} (Popup={popupLabel}, Tab={tabLabel}){formattedQuery}";
 
                 return $"{stem} (Popup={popupLabel}){formattedQuery}";
             }
 
-            if (tabToken != null && moduleToken != null)
-                return $"{stem} ({tabToken}, {moduleToken}){formattedQuery}";
+            if (tabLabel != null && moduleLabel != null)
+                return $"{stem} (Tab={tabLabel}, Module={moduleLabel}){formattedQuery}";
 
-            if (tabToken != null)
-                return $"{stem} ({tabToken}){formattedQuery}";
+            if (tabLabel != null)
+                return $"{stem} (Tab={tabLabel}){formattedQuery}";
 
             return $"{stem}{formattedQuery}";
         }
