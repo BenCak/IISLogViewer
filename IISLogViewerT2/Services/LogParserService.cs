@@ -25,6 +25,7 @@ namespace IISLogViewer.Services
     public class LogReport
     {
         public int TotalHits { get; set; }
+        public int IgnoredRequestCount { get; set; }
         public Dictionary<string, int> PageHits { get; set; } = new();
         public Dictionary<string, int> PageEntryHits { get; set; } = new();
         public Dictionary<string, Dictionary<string, int>> PageNextPageHits { get; set; } = new();
@@ -495,6 +496,8 @@ namespace IISLogViewer.Services
 
                         string tabName = "-";
                         string moduleName = "-";
+                        int? tabId = null;
+                        int? moduleId = null;
                         string popupName = "-";
 
                         if (!string.IsNullOrEmpty(uriQuery))
@@ -504,11 +507,17 @@ namespace IISLogViewer.Services
                                 .Where(p => p.Length == 2)
                                 .ToDictionary(p => p[0], p => p[1], StringComparer.OrdinalIgnoreCase);
 
-                            if (queryParams.TryGetValue("TabID", out var tabIdStr) && int.TryParse(tabIdStr, out var tabId))
-                                tabName = DnnMappings.Tabs.TryGetValue(tabId, out var tn) ? tn : $"Tab {tabId}";
+                            if (queryParams.TryGetValue("TabID", out var tabIdStr) && int.TryParse(tabIdStr, out var parsedTabId))
+                            {
+                                tabId = parsedTabId;
+                                tabName = DnnMappings.Tabs.TryGetValue(parsedTabId, out var tn) ? tn : $"Tab {parsedTabId}";
+                            }
 
-                            if (queryParams.TryGetValue("ModuleID", out var modIdStr) && int.TryParse(modIdStr, out var modId))
-                                moduleName = DnnMappings.Modules.TryGetValue(modId, out var mn) ? mn : $"Module {modId}";
+                            if (queryParams.TryGetValue("ModuleID", out var modIdStr) && int.TryParse(modIdStr, out var parsedModuleId))
+                            {
+                                moduleId = parsedModuleId;
+                                moduleName = DnnMappings.Modules.TryGetValue(parsedModuleId, out var mn) ? mn : $"Module {parsedModuleId}";
+                            }
 
                             if (queryParams.TryGetValue("PopupControlType", out var pctStr) && int.TryParse(pctStr, out var pct))
                                 popupName = DnnMappings.PopupControlTypes.TryGetValue(pct, out var pn) ? pn : $"Type {pct}";
@@ -524,8 +533,8 @@ namespace IISLogViewer.Services
                             Action = BuildPageLabel(
                                 uriStem,
                                 uriQuery,
-                                tabName == "-" ? null : tabName,
-                                moduleName == "-" ? null : moduleName,
+                                tabId,
+                                moduleId,
                                 eventType == "Popup" ? (popupName == "-" ? null : popupName) : null),
                             EventType = eventType,
                             TabName = tabName,
@@ -575,6 +584,7 @@ namespace IISLogViewer.Services
                 var r = res.Report;
 
                 report.TotalHits += r.TotalHits;
+                report.IgnoredRequestCount += r.IgnoredRequestCount;
 
                 MergeDictionary(report.PageHits, r.PageHits);
                 MergeDictionary(report.PageEntryHits, r.PageEntryHits);
@@ -932,6 +942,8 @@ namespace IISLogViewer.Services
                         // Parse query string for DNN specific things
                         string? tabName = null;
                         string? moduleName = null;
+                        int? tabId = null;
+                        int? moduleId = null;
                         int? popupType = null;
 
                         if (!string.IsNullOrEmpty(uriQuery))
@@ -941,11 +953,17 @@ namespace IISLogViewer.Services
                                 .Where(p => p.Length == 2)
                                 .ToDictionary(p => p[0], p => p[1], StringComparer.OrdinalIgnoreCase);
 
-                            if (queryParams.TryGetValue("TabID", out var tabIdStr) && int.TryParse(tabIdStr, out var tabId))
-                                tabName = DnnMappings.Tabs.TryGetValue(tabId, out var tn) ? tn : $"Tab {tabId}";
+                            if (queryParams.TryGetValue("TabID", out var tabIdStr) && int.TryParse(tabIdStr, out var parsedTabId))
+                            {
+                                tabId = parsedTabId;
+                                tabName = DnnMappings.Tabs.TryGetValue(parsedTabId, out var tn) ? tn : $"Tab {parsedTabId}";
+                            }
 
-                            if (queryParams.TryGetValue("ModuleID", out var modIdStr) && int.TryParse(modIdStr, out var modId))
-                                moduleName = DnnMappings.Modules.TryGetValue(modId, out var mn) ? mn : $"Module {modId}";
+                            if (queryParams.TryGetValue("ModuleID", out var modIdStr) && int.TryParse(modIdStr, out var parsedModuleId))
+                            {
+                                moduleId = parsedModuleId;
+                                moduleName = DnnMappings.Modules.TryGetValue(parsedModuleId, out var mn) ? mn : $"Module {parsedModuleId}";
+                            }
 
                             if (queryParams.TryGetValue("PopupControlType", out var pctStr) && int.TryParse(pctStr, out var pct))
                                 popupType = pct;
@@ -1010,7 +1028,10 @@ namespace IISLogViewer.Services
                         else
                         {
                             // It's a Page
-                            string pageLabel = BuildPageLabel(uriStem, uriQuery, tabName, moduleName, null);
+                            if (!DnnMappings.AllowedPageExtensions.Contains(fileExtension))
+                                continue;
+
+                            string pageLabel = BuildPageLabel(uriStem, uriQuery, tabId, moduleId, null);
 
                             if (!report.PageHits.ContainsKey(pageLabel))
                                 report.PageHits[pageLabel] = 0;
@@ -1097,26 +1118,28 @@ namespace IISLogViewer.Services
             };
         }
 
-        private string BuildPageLabel(string stem, string query, string? tabName, string? moduleName, string? popupLabel)
+        private string BuildPageLabel(string stem, string query, int? tabId, int? moduleId, string? popupLabel)
         {
             var formattedQuery = BuildDisplayQueryString(query);
+            var tabToken = tabId.HasValue ? $"TabID={tabId.Value}" : null;
+            var moduleToken = moduleId.HasValue ? $"ModuleID={moduleId.Value}" : null;
 
             if (!string.IsNullOrWhiteSpace(popupLabel))
             {
-                if (tabName != null && moduleName != null)
-                    return $"{stem} (Popup={popupLabel}, Tab={tabName}, Module={moduleName}){formattedQuery}";
+                if (tabToken != null && moduleToken != null)
+                    return $"{stem} (Popup={popupLabel}, {tabToken}, {moduleToken}){formattedQuery}";
 
-                if (tabName != null)
-                    return $"{stem} (Popup={popupLabel}, Tab={tabName}){formattedQuery}";
+                if (tabToken != null)
+                    return $"{stem} (Popup={popupLabel}, {tabToken}){formattedQuery}";
 
                 return $"{stem} (Popup={popupLabel}){formattedQuery}";
             }
 
-            if (tabName != null && moduleName != null)
-                return $"{stem} (Tab={tabName}, Module={moduleName}){formattedQuery}";
+            if (tabToken != null && moduleToken != null)
+                return $"{stem} ({tabToken}, {moduleToken}){formattedQuery}";
 
-            if (tabName != null)
-                return $"{stem} (Tab={tabName}){formattedQuery}";
+            if (tabToken != null)
+                return $"{stem} ({tabToken}){formattedQuery}";
 
             return $"{stem}{formattedQuery}";
         }
@@ -1134,9 +1157,10 @@ namespace IISLogViewer.Services
                 {
                     var eqIndex = p.IndexOf('=');
                     var key = eqIndex >= 0 ? p[..eqIndex] : p;
-                    return !key.Equals("TabID", StringComparison.OrdinalIgnoreCase)
-                        && !key.Equals("ModuleID", StringComparison.OrdinalIgnoreCase);
+                    return key.Equals("TabID", StringComparison.OrdinalIgnoreCase)
+                        || key.Equals("ModuleID", StringComparison.OrdinalIgnoreCase);
                 })
+                .OrderBy(p => p.StartsWith("TabID=", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                 .ToList();
 
             return filtered.Count == 0 ? "" : $"?{string.Join("&", filtered)}";

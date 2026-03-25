@@ -6,6 +6,12 @@
 
 <div class="page-header">
     <h5>@ReportTitle</h5>
+    @if (CurrentReport != null)
+    {
+        <div class="header-subtle-metric">
+            Ignored Requests: @CurrentReport.IgnoredRequestCount.ToString("N0")
+        </div>
+    }
 </div>
 
 @if (!SelectionState.SelectedDays.Any())
@@ -46,6 +52,10 @@ else
             <div class="stat-card__value stat-card__value--error">@ServerErrorCount.ToString("N0")</div>
             <div class="stat-card__label">Server Errors (5xx)</div>
         </article>
+        <article class="stat-card">
+            <div class="stat-card__value stat-card__value--muted">@CurrentReport.IgnoredRequestCount.ToString("N0")</div>
+            <div class="stat-card__label">Ignored Requests</div>
+        </article>
     </div>
 
     <section class="surface-panel">
@@ -58,6 +68,14 @@ else
         margin: 0 0 0.8rem;
         font-size: 1.45rem;
         font-weight: 700;
+    }
+
+    .header-subtle-metric {
+        margin-top: 0.2rem;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--kendo-color-subtle, #666);
+        opacity: 0.85;
     }
 
     .info-banner,
@@ -105,6 +123,7 @@ else
     .stat-card__value--success { color: #28a745; }
     .stat-card__value--warning { color: #ff9800; }
     .stat-card__value--error { color: #f44336; }
+    .stat-card__value--muted { color: var(--kendo-color-subtle, #666); }
 
     .stat-card__label {
         margin-top: 0.2rem;

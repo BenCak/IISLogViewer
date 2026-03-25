@@ -83,5 +83,11 @@ namespace IISLogViewer.Services
         {
             ".pdf", ".exe", ".doc", ".docx"
         };
+
+        // Only these extensions are included in page-hit style reporting.
+        public static readonly HashSet<string> AllowedPageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".aspx", ".asmx", ".ashx", ".svc", ".html", ".htm", ".doc", ".docx", ".xls", ".xlsx", ".exe"
+        };
     }
 }

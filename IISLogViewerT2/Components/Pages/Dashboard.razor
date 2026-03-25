@@ -6,6 +6,12 @@
     <div>
         <h5>Overall Summary</h5>
         <p>Total Files: @TotalFiles | Years: @TotalYears | Date Range: @DateRange</p>
+        @if (OverallReport != null)
+        {
+            <div class="header-subtle-metric">
+                Ignored Requests: @OverallReport.IgnoredRequestCount.ToString("N0")
+            </div>
+        }
     </div>
 </div>
 
@@ -61,6 +67,13 @@ else
         margin: 0.2rem 0 0.75rem;
         color: var(--kendo-color-subtle, #666);
         font-size: 0.98rem;
+    }
+
+    .header-subtle-metric {
+        margin: -0.45rem 0 0.75rem;
+        font-size: 0.78rem;
+        color: var(--kendo-color-subtle, #666);
+        opacity: 0.85;
     }
 
     .stats-grid {

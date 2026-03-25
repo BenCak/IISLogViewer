@@ -752,6 +752,7 @@
 
     private IEnumerable<TopPageInsightRow> FilteredTopPageRows =>
         BuildTopPageInsights()
+            .Where(row => ParseNumber(row.HitsLabel) >= 5)
             .Where(row => FilterCore($"{row.Page} {row.TopNextPage}", _searchPages));
 
     private IEnumerable<LabelValueRow> FilteredIpRows => FilterLabelValueRows(ReportData?.TopIPs, _searchIPs);
