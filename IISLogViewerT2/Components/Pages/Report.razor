@@ -451,20 +451,22 @@
                             </HeaderTemplate>
                             <Template Context="itemObj">
                                 @{ var row = (UserRow)itemObj; }
-                                <a href="#"
-                                   class="user-link"
-                                   @onclick:preventDefault="true"
-                                   @onclick="() => OpenUserPopup(row.UserName)">
-                                    @row.DisplayName
-                                    @if (_loadingUserName == row.UserName)
+                                <div class="user-identity-line">
+                                    <a href="#"
+                                       class="user-link"
+                                       @onclick:preventDefault="true"
+                                       @onclick="() => OpenUserPopup(row.UserName)">
+                                        @row.DisplayName
+                                        @if (_loadingUserName == row.UserName)
+                                        {
+                                            <TelerikLoader Size="@ThemeConstants.Loader.Size.Small" Type="@LoaderType.Pulsing" Class="user-link-spinner" />
+                                        }
+                                    </a>
+                                    @if (!string.IsNullOrWhiteSpace(row.Email))
                                     {
-                                        <TelerikLoader Size="@ThemeConstants.Loader.Size.Small" Type="@LoaderType.Pulsing" Class="user-link-spinner" />
+                                        <span class="toolbar-subtle user-email-inline">@row.Email</span>
                                     }
-                                </a>
-                                @if (!string.IsNullOrWhiteSpace(row.Email))
-                                {
-                                    <div class="toolbar-subtle">@row.Email</div>
-                                }
+                                </div>
                             </Template>
                         </GridColumn>
                         <GridColumn Field="@nameof(UserRow.Department)" Width="180px">
@@ -637,6 +639,17 @@
         display: inline-block;
         vertical-align: middle;
         margin-left: 0.3rem;
+    }
+
+    .user-identity-line {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .user-email-inline {
+        margin-top: 0;
     }
 
     @@media (max-width: 720px) {
@@ -863,7 +876,7 @@
     }
 
     private IEnumerable<NextPageFlowRow> SelectedNextPageFlowRows =>
-        BuildNextPageFlowRows(_selectedFlowPage).Take(5);
+        BuildNextPageFlowRows(_selectedFlowPage).Take(10);
 
     private IEnumerable<NextPageFlowRow> BuildNextPageFlowRows(string page)
     {

@@ -887,8 +887,10 @@ namespace IISLogViewer.Services
 
                         
                         if (IsIgnoredRequest(uriStem))
+                        {    
+                            report.IgnoredRequestCount++;
                             continue;
-
+                        }
                         report.TotalHits++;
 
                         // Track hourly traffic in configured local timezone (IIS timestamp is UTC)
